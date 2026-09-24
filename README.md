@@ -15,12 +15,15 @@ and Linux with nothing to compile. You can open it in REAPER's editor and change
 1. In REAPER: **Options → Show REAPER resource path in explorer/finder**.
 2. Copy `ReeseBasser.jsfx` into the `Effects` folder (a sub-folder such as
    `Effects/ReeseBasser/` also works).
-3. On a track, add FX → **JS: Reese Basser - Reese bass synthesizer**. It is listed under
-   **Instruments** in the FX browser (press F5 there if it doesn't show up yet).
+3. Restart REAPER (or refresh the FX browser with F5). On a track, add FX →
+   **JS: Reese Basser - Reese bass synthesizer**; it is listed under **Instruments**.
 4. Arm the track for MIDI input, or draw MIDI items, and play.
 
 Requires **REAPER 6.74 or newer** (the plugin has 100 automatable parameters
 and uses slider shaping). REAPER 7 is recommended.
+
+Every control is a normal REAPER parameter, so automation, REAPER's own **Parameter
+Modulation** (LFO / audio follower / MIDI link) and **FX Parameter MIDI Learn** work on all of them.
 
 The custom UI scales to any window size. REAPER's generic slider view (the
 "+"/"UI" button in the FX window) lists all 100 parameters with readable names,
@@ -206,6 +209,10 @@ The plugin was developed with an offline harness in `tools/`:
   and all presets. It checks for NaN, silence and clipping, and **measures the beat rate** to
   verify the Cents / Hz / Tempo-Sync detune modes.
 * `tools/make_demo.py`: renders all presets on a DnB bassline to `build/demo/`.
+
+Project notes for contributors (and AI assistants): `CLAUDE.md`, `docs/JSFX_NOTES.md`
+(verified JSFX facts), `docs/DECISIONS.md` (architecture decision records) and
+`docs/SESSION_LOG.md`.
 
 ```
 pip install numpy          # (lameenc optional, for the MP3 demo)

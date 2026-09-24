@@ -1220,6 +1220,7 @@ function draw_lfo(x, y, w, h, shape) local(i, p, v, px, py, lpx, lpy) (
 
 // ================================================================ presets
 PRESETS = "Init - Classic Dual Saw|Saunderson '88 (CZ)|Terrorist Jungle|Mutant Techstep|Neuro Double Notch|Liquid Roller|Garage PWM|FM Growl|Sync Scream|Filter-Method Reese|Cross-Fold Mod|Yoi Talker|Tempo-Locked Throb|Barberpole Shift|Bitcrushed Sampler|Burial Rumble|Wide Unison Wall|Hoover Reese|Ring-Mod Metal|Talking Flanger";
+NUM_PRESETS = enum_count(PRESETS);
 function pv(i, v) ( p_put(i, v); );
 function mod(slot, msrcv, dst, amt) ( pv(83 + slot*3, msrcv); pv(84 + slot*3, dst); pv(85 + slot*3, amt); );
 function load_preset(n) local(i) (
@@ -1784,8 +1785,8 @@ font(6); col(0.5, 0.53, 0.6, 1); TX("detuned bass synthesizer", 16, 41, 200, 10,
 accent(0.24, 0.9, 0.76);
 col(0.07, 0.075, 0.09, 1); RF(400, 12, 330, 28);
 col(0.25, 0.27, 0.32, 1); RO(400, 12, 330, 28);
-button("<", 372, 12, 26, 28) ? ( load_preset(cur_preset > 0 ? cur_preset - 1 : 19); );
-button(">", 732, 12, 26, 28) ? ( load_preset(cur_preset < 19 ? cur_preset + 1 : 0); );
+button("<", 372, 12, 26, 28) ? ( load_preset(cur_preset > 0 ? cur_preset - 1 : NUM_PRESETS - 1); );
+button(">", 732, 12, 26, 28) ? ( load_preset(cur_preset < NUM_PRESETS - 1 ? cur_preset + 1 : 0); );
 font(5); col(0.92, 0.94, 0.97, 1);
 list_item(#pn, PRESETS, cur_preset);
 preset_edited ? strcat(#pn, " *");

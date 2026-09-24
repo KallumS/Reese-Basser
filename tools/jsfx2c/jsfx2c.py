@@ -190,10 +190,8 @@ class Parser:
         return a
 
     def parse_or(self):
-        return self._binary(self.parse_and, ('||',))
-
-    def parse_and(self):
-        return self._binary(self.parse_cmp, ('&&',))
+        # EEL2: || and && have EQUAL precedence and evaluate left to right
+        return self._binary(self.parse_cmp, ('||', '&&'))
 
     def parse_cmp(self):
         return self._binary(self.parse_bit, ('==', '!=', '===', '!==', '<', '>', '<=', '>='))
@@ -369,6 +367,14 @@ RUNTIME_FUNCS = {
     'str_getchar': None, 'str_setchar': None, 'sprintf': None, 'strncpy': 3, 'match': None,
     'printf': None,
 }
+
+
+# argument counts as documented in the JSFX programming reference
+ARG_RANGE = {'gfx_rect': (4, 4), 'gfx_line': (4, 5), 'gfx_lineto': (2, 3), 'gfx_circle': (3, 5),
+             'gfx_arc': (5, 6), 'gfx_roundrect': (5, 6), 'gfx_drawstr': (1, 4), 'gfx_setfont': (1, 4),
+             'gfx_triangle': (6, 40), 'gfx_showmenu': (1, 1), 'gfx_set': (1, 7),
+             'slider_automate': (1, 2), 'sliderchange': (1, 1), 'strcpy_substr': (4, 4),
+             'str_getchar': (2, 3), 'midirecv': (3, 4), 'time_precise': (0, 1)}
 
 
 class CGen:
@@ -568,6 +574,10 @@ class CGen:
                 else:
                     cargs.append(self.strid(a, ctx))
             return f'r_{name}({", ".join(cargs)})'
+        if name in ARG_RANGE:
+            lo, hi = ARG_RANGE[name]
+            if not lo <= len(args) <= hi:
+                raise SyntaxError(f'line {line}: {name} takes {lo}..{hi} args (JSFX reference), got {len(args)}')
         if name in RUNTIME_FUNCS:
             want = RUNTIME_FUNCS[name]
             if want is not None and len(args) != want:
@@ -596,11 +606,25 @@ class CGen:
             else:
                 raise SyntaxError(f'line {line}: unknown function {name}')
         f = self.funcs[fname]
+        if ns == '' and '.' not in name and (f.instances or self.uses_this(f.body)):
+            # EEL2: calling set_foo() without a namespace uses "set_foo" as the namespace
+            ns = fname
         if len(args) != len(f.params):
             raise SyntaxError(f'line {line}: {fname} expects {len(f.params)} args, got {len(args)}')
         cname = self.specialize(f, ns)
         cargs = [self.expr(a, ctx) for a in args]
         return f'{cname}({", ".join(cargs)})'
+
+    def uses_this(self, node):
+        if isinstance(node, tuple):
+            if node[0] == 'var' and node[1].startswith('this'):
+                return True
+            if node[0] == 'call' and node[1].startswith('this.'):
+                return True
+            return any(self.uses_this(x) for x in node[1:])
+        if isinstance(node, list):
+            return any(self.uses_this(x) for x in node)
+        return False
 
     def specialize(self, f, ns):
         key = (f.name, ns)

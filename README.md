@@ -15,8 +15,8 @@ and Linux with nothing to compile. You can open it in REAPER's editor and change
 1. In REAPER: **Options → Show REAPER resource path in explorer/finder**.
 2. Copy `ReeseBasser.jsfx` into the `Effects` folder (a sub-folder such as
    `Effects/ReeseBasser/` also works).
-3. On a track, add FX → **JS: Reese Basser - Reese bass synthesizer**
-   (press F5 in the FX browser if it doesn't show up yet).
+3. On a track, add FX → **JS: Reese Basser - Reese bass synthesizer**. It is listed under
+   **Instruments** in the FX browser (press F5 there if it doesn't show up yet).
 4. Arm the track for MIDI input, or draw MIDI items, and play.
 
 Requires **REAPER 6.74 or newer** (the plugin has 100 automatable parameters
@@ -197,8 +197,9 @@ REAPER's preset menu (the "+" button in the FX window) can store them as user pr
 
 The plugin was developed with an offline harness in `tools/`:
 
-* `tools/jsfx2c/jsfx2c.py`: a small JSFX/EEL2 → C transpiler (strict parser, case-insensitive
-  names like EEL2, bounds-checked memory, warnings for typos / case collisions).
+* `tools/jsfx2c/jsfx2c.py`: a small JSFX/EEL2 → C transpiler that follows the JSFX programming
+  reference: case-insensitive names, equal-precedence `&&`/`||`, define-before-use functions,
+  documented built-in argument counts, bounds-checked memory, and errors for case-only name clashes.
 * `tools/jsfx2c/runtime.c`: renders audio from MIDI event lists and logs `@gfx` drawing.
   `render_gfx.py` turns that log into a PNG.
 * `tools/test_render.py`: renders every engine at every oversampling rate, all mangle/FX blocks

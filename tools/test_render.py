@@ -39,7 +39,7 @@ def read_wav(path):
     return x
 
 
-def render(exe, out, name, sliders, notes, secs=2.0, sr=44100, tempo=174):
+def render(exe, out, name, sliders, notes, secs=2.0, sr=44100, tempo=174, init_srate=None):
     ev = os.path.join(out, name + '.txt')
     with open(ev, 'w') as f:
         for idx, val in sliders.items():
@@ -50,7 +50,11 @@ def render(exe, out, name, sliders, notes, secs=2.0, sr=44100, tempo=174):
             else:
                 f.write(f'{t} midi 128 {n} 0\n')
     wav = os.path.join(out, name + '.wav')
-    r = subprocess.run([exe, 'render', str(sr), str(secs), ev, wav, str(tempo)], capture_output=True, text=True)
+    env = dict(os.environ)
+    if init_srate:
+        env['JSFX_INIT_SRATE'] = str(init_srate)
+    r = subprocess.run([exe, 'render', str(sr), str(secs), ev, wav, str(tempo)], capture_output=True, text=True,
+                       env=env)
     if r.returncode not in (0,):
         print(r.stdout, r.stderr)
         raise SystemExit(f'render failed: {name}')
@@ -111,6 +115,14 @@ def main():
                   [(0.0, 33, 100), (3.9, 33, 0)], secs=4, tempo=120)
     r = envelope_rate(x[4410:], 44100)
     ok = abs(r - 2.0) < 0.25
+    fails += not ok
+    print(f'  measured {r:.2f} Hz {"OK" if ok else "FAIL"}')
+
+    print('--- @init ran at a stale 44.1 kHz, playing at 96 kHz (ext_noinit case): 2 Hz beat')
+    x, _ = render(exe, a.out, 'stale_srate', {1: 0, 3: 1, 4: 2.0, 21: 5, 11: 0, 12: 0},
+                  [(0.0, 33, 100), (3.9, 33, 0)], secs=4, sr=96000, init_srate=44100)
+    r = envelope_rate(x[9600:], 96000)
+    ok = abs(r - 2.0) < 0.25 and np.isfinite(x).all() and np.abs(x).max() <= 1.0001
     fails += not ok
     print(f'  measured {r:.2f} Hz {"OK" if ok else "FAIL"}')
 

@@ -1,5 +1,5 @@
 desc:Reese Basser - Reese bass synthesizer
-//tags: instrument synthesizer bass reese
+tags:instrument synthesizer bass reese
 //author: Reese Basser
 //version: 1.0
 //
@@ -475,7 +475,12 @@ function handle_midi(s, d1, d2) local(st) (
 
 // ================================================================ derived parameters
 function update_params() (
-  isr = 1/srate;
+  // srate may not be valid in @init (ext_noinit), so everything rate-dependent lives here
+  isr = 1/srate; last_srate = srate;
+  lfo_smooth = 1 - exp(-1/(0.0015*srate));
+  smc = 1 - exp(-1/(0.012*srate));
+  vel_c = 1 - exp(-1/(0.004*srate));
+  dc_r = 1 - 2*$pi*8/srate;
   os = quality == 0 ? 1 : quality == 1 ? 2 : 4;
   fs_os = srate*os; isr_os = 1/fs_os;
   os != last_os ? ( decl.dec_reset(); decr.dec_reset(); last_os = os; );
@@ -527,14 +532,10 @@ function update_params() (
 // ================================================================ state
 nstk = 0; gate = 0; vel = 0.8; cur_pitch = tgt_pitch = 36; has_played = 0;
 modwheel = 0; aftertouch = 0; bend_v = 0; sustain_ped = 0;
-lfo_smooth = 1 - exp(-1/(0.0015*srate));
-isr = 1/srate;
-smc = 1 - exp(-1/(0.012*srate));
-vel_c = 1 - exp(-1/(0.004*srate)); velg = 1;
+velg = 1;
 sm_lcut = log(cutoff)/log(2); sm_det = det; sm_a = enga; sm_b = engb; sm_c = engc;
 sm_vol = db2g(volume); sm_mvf = log(mvfreq)/log(2); sm_vowel = vowel; sm_shift = fshift;
 sm_beathz = beathz;
-dc_r = 1 - 2*$pi*8/srate;
 drift_ctr = 0;
 scope_pos = 0; throb_pos = 0; throb_acc = 0; throb_n = 0;
 prev_eng = -1; prev_uni = -1; prev_ssv = -1;
@@ -672,8 +673,72 @@ function val_of(i, n) local(mn, mx, sh, v) (
   PSTEP[i] ? v = floor(v + 0.5);
   v;
 );
-// sliders above 64 cannot be addressed by bit mask: pass the slider variable itself
-function notify_hi(i) (
+// notify REAPER about a changed parameter by passing the slider variable itself
+function notify(i) (
+  i == 1 ? sliderchange(eng) :
+  i == 2 ? sliderchange(det) :
+  i == 3 ? sliderchange(detmode) :
+  i == 4 ? sliderchange(beathz) :
+  i == 5 ? sliderchange(beatdiv) :
+  i == 6 ? sliderchange(enga) :
+  i == 7 ? sliderchange(engb) :
+  i == 8 ? sliderchange(engc) :
+  i == 9 ? sliderchange(unison) :
+  i == 10 ? sliderchange(uspread) :
+  i == 11 ? sliderchange(spread) :
+  i == 12 ? sliderchange(drift) :
+  i == 13 ? sliderchange(phasemode) :
+  i == 14 ? sliderchange(osclvl) :
+  i == 15 ? sliderchange(sublvl) :
+  i == 16 ? sliderchange(subwave) :
+  i == 17 ? sliderchange(suboct) :
+  i == 18 ? sliderchange(noiselvl) :
+  i == 19 ? sliderchange(ncolor) :
+  i == 20 ? sliderchange(lowcut) :
+  i == 21 ? sliderchange(ftype) :
+  i == 22 ? sliderchange(cutoff) :
+  i == 23 ? sliderchange(reso) :
+  i == 24 ? sliderchange(fdrive) :
+  i == 25 ? sliderchange(fkey) :
+  i == 26 ? sliderchange(fenv) :
+  i == 27 ? sliderchange(aatt) :
+  i == 28 ? sliderchange(adec) :
+  i == 29 ? sliderchange(asus) :
+  i == 30 ? sliderchange(arel) :
+  i == 31 ? sliderchange(matt) :
+  i == 32 ? sliderchange(mdec) :
+  i == 33 ? sliderchange(msus) :
+  i == 34 ? sliderchange(mrel) :
+  i == 35 ? sliderchange(l1shape) :
+  i == 36 ? sliderchange(l1sync) :
+  i == 37 ? sliderchange(l1rate) :
+  i == 38 ? sliderchange(l1div) :
+  i == 39 ? sliderchange(l1trig) :
+  i == 40 ? sliderchange(l1fade) :
+  i == 41 ? sliderchange(l2shape) :
+  i == 42 ? sliderchange(l2sync) :
+  i == 43 ? sliderchange(l2rate) :
+  i == 44 ? sliderchange(l2div) :
+  i == 45 ? sliderchange(l2trig) :
+  i == 46 ? sliderchange(l2fade) :
+  i == 47 ? sliderchange(dtype) :
+  i == 48 ? sliderchange(ddrive) :
+  i == 49 ? sliderchange(dtone) :
+  i == 50 ? sliderchange(dmix) :
+  i == 51 ? sliderchange(dpos) :
+  i == 52 ? sliderchange(mvtype) :
+  i == 53 ? sliderchange(mvfreq) :
+  i == 54 ? sliderchange(mvdepth) :
+  i == 55 ? sliderchange(mvrate) :
+  i == 56 ? sliderchange(mvreso) :
+  i == 57 ? sliderchange(mvstereo) :
+  i == 58 ? sliderchange(mvmix) :
+  i == 59 ? sliderchange(vowel) :
+  i == 60 ? sliderchange(fmix) :
+  i == 61 ? sliderchange(fshift) :
+  i == 62 ? sliderchange(shmix) :
+  i == 63 ? sliderchange(ring) :
+  i == 64 ? sliderchange(ringmix) :
   i == 65 ? sliderchange(bits) :
   i == 66 ? sliderchange(downs) :
   i == 67 ? sliderchange(cmix) :
@@ -712,7 +777,71 @@ function notify_hi(i) (
   i == 100 ? sliderchange(m6amt) :
   0;
 );
-function automate_hi(i, done) (
+function automate(i, done) (
+  i == 1 ? slider_automate(eng, done) :
+  i == 2 ? slider_automate(det, done) :
+  i == 3 ? slider_automate(detmode, done) :
+  i == 4 ? slider_automate(beathz, done) :
+  i == 5 ? slider_automate(beatdiv, done) :
+  i == 6 ? slider_automate(enga, done) :
+  i == 7 ? slider_automate(engb, done) :
+  i == 8 ? slider_automate(engc, done) :
+  i == 9 ? slider_automate(unison, done) :
+  i == 10 ? slider_automate(uspread, done) :
+  i == 11 ? slider_automate(spread, done) :
+  i == 12 ? slider_automate(drift, done) :
+  i == 13 ? slider_automate(phasemode, done) :
+  i == 14 ? slider_automate(osclvl, done) :
+  i == 15 ? slider_automate(sublvl, done) :
+  i == 16 ? slider_automate(subwave, done) :
+  i == 17 ? slider_automate(suboct, done) :
+  i == 18 ? slider_automate(noiselvl, done) :
+  i == 19 ? slider_automate(ncolor, done) :
+  i == 20 ? slider_automate(lowcut, done) :
+  i == 21 ? slider_automate(ftype, done) :
+  i == 22 ? slider_automate(cutoff, done) :
+  i == 23 ? slider_automate(reso, done) :
+  i == 24 ? slider_automate(fdrive, done) :
+  i == 25 ? slider_automate(fkey, done) :
+  i == 26 ? slider_automate(fenv, done) :
+  i == 27 ? slider_automate(aatt, done) :
+  i == 28 ? slider_automate(adec, done) :
+  i == 29 ? slider_automate(asus, done) :
+  i == 30 ? slider_automate(arel, done) :
+  i == 31 ? slider_automate(matt, done) :
+  i == 32 ? slider_automate(mdec, done) :
+  i == 33 ? slider_automate(msus, done) :
+  i == 34 ? slider_automate(mrel, done) :
+  i == 35 ? slider_automate(l1shape, done) :
+  i == 36 ? slider_automate(l1sync, done) :
+  i == 37 ? slider_automate(l1rate, done) :
+  i == 38 ? slider_automate(l1div, done) :
+  i == 39 ? slider_automate(l1trig, done) :
+  i == 40 ? slider_automate(l1fade, done) :
+  i == 41 ? slider_automate(l2shape, done) :
+  i == 42 ? slider_automate(l2sync, done) :
+  i == 43 ? slider_automate(l2rate, done) :
+  i == 44 ? slider_automate(l2div, done) :
+  i == 45 ? slider_automate(l2trig, done) :
+  i == 46 ? slider_automate(l2fade, done) :
+  i == 47 ? slider_automate(dtype, done) :
+  i == 48 ? slider_automate(ddrive, done) :
+  i == 49 ? slider_automate(dtone, done) :
+  i == 50 ? slider_automate(dmix, done) :
+  i == 51 ? slider_automate(dpos, done) :
+  i == 52 ? slider_automate(mvtype, done) :
+  i == 53 ? slider_automate(mvfreq, done) :
+  i == 54 ? slider_automate(mvdepth, done) :
+  i == 55 ? slider_automate(mvrate, done) :
+  i == 56 ? slider_automate(mvreso, done) :
+  i == 57 ? slider_automate(mvstereo, done) :
+  i == 58 ? slider_automate(mvmix, done) :
+  i == 59 ? slider_automate(vowel, done) :
+  i == 60 ? slider_automate(fmix, done) :
+  i == 61 ? slider_automate(fshift, done) :
+  i == 62 ? slider_automate(shmix, done) :
+  i == 63 ? slider_automate(ring, done) :
+  i == 64 ? slider_automate(ringmix, done) :
   i == 65 ? slider_automate(bits, done) :
   i == 66 ? slider_automate(downs, done) :
   i == 67 ? slider_automate(cmix, done) :
@@ -751,8 +880,6 @@ function automate_hi(i, done) (
   i == 100 ? slider_automate(m6amt, done) :
   0;
 );
-function notify(i) ( i <= 64 ? sliderchange(2^(i - 1)) : notify_hi(i); );
-function automate(i, done) ( i <= 64 ? slider_automate(2^(i - 1), done) : automate_hi(i, done); );
 // set a parameter from the UI (records automation)
 function p_set(i, v) (
   v = clamp(v, PMIN[i], PMAX[i]);
@@ -842,23 +969,30 @@ function fmt_val(dest, i) local(v, u, e, n) (
 // ---------------------------------------------------------------- drawing (logical coords)
 function col(r, g, b, a) ( gfx_r = r; gfx_g = g; gfx_b = b; gfx_a = a; );
 function RF(x, y, w, h) ( gfx_rect(ui_ox + x*ui_s, ui_oy + y*ui_s, max(1, w*ui_s), max(1, h*ui_s)); );
-function RO(x, y, w, h) ( gfx_rect(ui_ox + x*ui_s, ui_oy + y*ui_s, w*ui_s, h*ui_s, 0); );
+function RO(x, y, w, h) local(x0, y0, x1, y1) (
+  x0 = floor(ui_ox + x*ui_s); y0 = floor(ui_oy + y*ui_s);
+  x1 = floor(ui_ox + (x + w)*ui_s) - 1; y1 = floor(ui_oy + (y + h)*ui_s) - 1;
+  gfx_rect(x0, y0, x1 - x0 + 1, 1); gfx_rect(x0, y1, x1 - x0 + 1, 1);
+  gfx_rect(x0, y0, 1, y1 - y0 + 1); gfx_rect(x1, y0, 1, y1 - y0 + 1);
+);
 function LN(x1, y1, x2, y2) ( gfx_line(ui_ox + x1*ui_s, ui_oy + y1*ui_s, ui_ox + x2*ui_s, ui_oy + y2*ui_s, 1); );
 function CI(x, y, r, f) ( gfx_circle(ui_ox + x*ui_s, ui_oy + y*ui_s, r*ui_s, f, 1); );
 function ARC(x, y, r, a0, a1) ( gfx_arc(ui_ox + x*ui_s, ui_oy + y*ui_s, r*ui_s, a0, a1, 1); );
 // text in a box; flags: 1 = center h, 2 = right, 4 = center v
 function TX(str, x, y, w, h, flags) (
+  // gfx_drawstr clips to (gfx_x, gfx_y, right, bottom): pad the box so glyphs are never cut
+  flags & 4 ? ( y -= 4; h += 8; ) : h += 5;
   gfx_x = ui_ox + x*ui_s; gfx_y = ui_oy + y*ui_s;
   gfx_drawstr(str, flags, ui_ox + (x + w)*ui_s, ui_oy + (y + h)*ui_s);
 );
 function font(n) ( gfx_setfont(n); );
 function setup_fonts(s) (
-  gfx_setfont(1, "Arial", max(7, 10.5*s));
-  gfx_setfont(2, "Arial", max(7, 10*s));
-  gfx_setfont(3, "Arial", max(7, 11.5*s), 98);
-  gfx_setfont(4, "Arial", max(8, 24*s), 98);
-  gfx_setfont(5, "Arial", max(7, 12*s));
-  gfx_setfont(6, "Arial", max(7, 9.5*s));
+  gfx_setfont(1, "Arial", max(8, 10.5*s));
+  gfx_setfont(2, "Arial", max(8, 10*s));
+  gfx_setfont(3, "Arial", max(8, 11.5*s), 98);
+  gfx_setfont(4, "Arial", max(10, 24*s), 98);
+  gfx_setfont(5, "Arial", max(8, 12*s));
+  gfx_setfont(6, "Arial", max(8, 9.5*s));
 );
 function inr(x, y, w, h) ( ui_mx >= x && ui_mx < x + w && ui_my >= y && ui_my < y + h; );
 function accent(r, g, b) ( acr = r; acg = g; acb = b; );
@@ -1215,7 +1349,7 @@ ui_drag = 0; cur_preset = 0; preset_edited = 0; preset_loaded_once = 0;
 update_params();
 
 @block
-ui_dirty ? ( ui_dirty = 0; update_params(); );
+(ui_dirty || srate != last_srate) ? ( ui_dirty = 0; update_params(); );
 mq_n = 0; mq_i = 0; spl_ctr = 0;
 while (midirecv(mofs, m1, m2, m3)) (
   mq_n < 2000 ? (
@@ -1630,6 +1764,7 @@ ui_ox = floor((gfx_w - UI_W*ui_s)*0.5); ui_oy = floor((gfx_h - UI_H*ui_s)*0.5);
 ui_s != ui_last_s ? ( setup_fonts(ui_s); ui_last_s = ui_s; );
 ui_mx = (mouse_x - ui_ox)/ui_s; ui_my = (mouse_y - ui_oy)/ui_s;
 ui_now = time_precise();
+gfx_getchar();   // makes mouse_cap report ctrl/shift even when the mouse isn't captured
 ui_click = (mouse_cap & 1) && !(ui_last_cap & 1);
 ui_release = !(mouse_cap & 1) && (ui_last_cap & 1);
 ui_release ? (

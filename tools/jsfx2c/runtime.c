@@ -394,7 +394,10 @@ static void setup(double sr, double tempo) {
   v_srate = sr; v_tempo = tempo; v_play_state = 1; v_beat_position = 0; v_num_ch = 2;
   v_ts_num = 4; v_ts_denom = 4;
   v_gfx_a = 1;
+  /* JSFX_INIT_SRATE: run @init with a different (stale) srate, as REAPER may do with ext_noinit */
+  if (getenv("JSFX_INIT_SRATE")) v_srate = atof(getenv("JSFX_INIT_SRATE"));
   sec_init();
+  v_srate = sr;
   sec_slider();
 }
 

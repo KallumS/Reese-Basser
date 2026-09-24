@@ -179,11 +179,22 @@ REAPER's preset menu (the "+" button in the FX window) can store them as user pr
 
 ## UI tips
 
+The interface has three pages, chosen with the tabs under the title:
+
+* **SYNTH**: engine, detune and beat, filter, sub + noise, glide/output, and a big scope/throb display.
+* **MODULATION**: amp and mod envelopes, LFO 1 and 2, and the 6-slot mod matrix.
+* **FX + MANGLE**: distortion, movement, the mangle rack and stereo. A mini scope stays visible
+  on these pages.
+
+| Modulation | FX + Mangle |
+|---|---|
+| ![Modulation page](docs/screenshot-modulation.png) | ![FX page](docs/screenshot-fx.png) |
+
 * **Drag** a knob up/down. **Shift+drag** for fine adjustment.
 * **Double-click** or **Ctrl/Cmd+click** resets to the default.
 * **Mouse wheel** steps a knob or cycles a dropdown.
 * The footer shows the full name and value of whatever is under the mouse.
-* **Oversampling** (bottom right): 1x is lightest on CPU, 2x (default) is the
+* **Oversampling** (SYNTH page, bottom right): 1x is lightest on CPU, 2x (default) is the
   best balance, 4x is cleanest for heavy distortion and sync.
 
 ## Reese recipes (from the guides)

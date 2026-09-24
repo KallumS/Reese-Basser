@@ -28,6 +28,10 @@ Where a behaviour has already caused a bug, it is marked ⚠.
   code changes a slider**, so the UI sets `ui_dirty` and `@block` applies it. ✔ used
 - `@block`: `samplesblock`, `tempo`, `play_state`, `beat_position` (at block start, in quarter notes). ✔ used
 - `@gfx [w h]` runs about 30×/s **in another thread** from audio. The size is a hint; use `gfx_w/gfx_h`.
+  ⚠ Any global written by both @gfx and audio code is a race. A shared loop counter (`mi`) made
+  the mod matrix flicker in REAPER (session 2). Use `ui_*` names; the transpiler checks this.
+- On macOS the text looked small at the original sizes (9.5–12 px logical). Keep UI text ≥ 11 px
+  logical at a scale of about 1.
 - `@serialize`: extra state via `file_var(0,x)`/`file_mem`. Sliders are saved automatically. Not used.
 
 ## Language

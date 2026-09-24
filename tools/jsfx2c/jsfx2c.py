@@ -392,6 +392,9 @@ class CGen:
         self.spec_protos = []
         self.tmp = 0
         self.usedfuncs = set()
+        self.owner = None      # section name or specialization currently being generated
+        self.writes = {}       # owner -> globals it writes directly
+        self.calls = {}        # owner -> specializations it calls
 
     # ---- names
     def cident(self, name):
@@ -433,6 +436,7 @@ class CGen:
         self.globals.add(name)
         if write:
             self.assigned.add(name)
+            self.writes.setdefault(self.owner, set()).add(name)
         else:
             self.read.setdefault(name, 0)
             self.read[name] += 1
@@ -612,6 +616,7 @@ class CGen:
         if len(args) != len(f.params):
             raise SyntaxError(f'line {line}: {fname} expects {len(f.params)} args, got {len(args)}')
         cname = self.specialize(f, ns)
+        self.calls.setdefault(self.owner, set()).add(cname)
         cargs = [self.expr(a, ctx) for a in args]
         return f'{cname}({", ".join(cargs)})'
 
@@ -626,6 +631,17 @@ class CGen:
             return any(self.uses_this(x) for x in node)
         return False
 
+    def written_by(self, owner):
+        seen, todo, out = set(), [owner], set()
+        while todo:
+            o = todo.pop()
+            if o in seen:
+                continue
+            seen.add(o)
+            out |= self.writes.get(o, set())
+            todo.extend(self.calls.get(o, ()))
+        return out
+
     def specialize(self, f, ns):
         key = (f.name, ns)
         if key in self.specs:
@@ -637,7 +653,9 @@ class CGen:
         params = ', '.join('double p_' + p.replace('.', '_') for p in f.params) or 'void'
         proto = f'static double {cname}({params})'
         self.spec_protos.append(proto + ';')
+        saved_owner, self.owner = self.owner, cname
         body = self.expr(f.body, ctx)
+        self.owner = saved_owner
         locs = ''.join(f'static double l_{cname}_{l.replace(".", "_")};\n' for l in f.locals)
         self.spec_code.append(f'{locs}{proto} {{\n return ({body});\n}}\n')
         return cname
@@ -682,9 +700,17 @@ def main():
     bodies = {}
     for sec in ('init', 'slider', 'block', 'sample', 'gfx'):
         if sec in asts:
+            gen.owner = sec
             bodies[sec] = gen.expr(asts[sec], None)
         else:
             bodies[sec] = '0.0'
+    # @gfx runs in its own thread, concurrently with @block/@sample/@slider: a global written by
+    # both is a data race (a shared loop counter made the mod matrix flicker in REAPER).
+    audio = gen.written_by('block') | gen.written_by('sample') | gen.written_by('slider')
+    shared_ok = {'ui_dirty'}   # intentional one-way flags
+    races = sorted((gen.written_by('gfx') & audio) - shared_ok)
+    if races:
+        raise SyntaxError('globals written by both @gfx and audio code (thread race): ' + ', '.join(races))
     out = []
     out.append('#include "runtime.h"\n')
     for v in SPECIAL_VARS:

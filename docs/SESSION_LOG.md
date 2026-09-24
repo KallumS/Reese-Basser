@@ -81,5 +81,25 @@ JSFX reference). The transpiler errors if a plugin with `@gfx` has more than 8 v
 (verified: the previous commit is rejected). ADR-011 records the decision, and the README,
 CLAUDE.md and JSFX_NOTES are updated.
 
-**Still to confirm in REAPER:** the custom UI appears and fits the window; fonts and layout;
-knob/automation behaviour; CPU while playing.
+**Result:** confirmed in REAPER; the GUI shows and looks good.
+
+### Session 2, part 2: feedback on the GUI in REAPER
+**Report:** most text is very small; could parts of the UI go on separate pages (FX on another page,
+mod matrix on its own)? Also, the mod matrix dropdowns flash constantly (slot 2 switching between
+LFO and Mod Env, slots 3–6 between their source and "Off").
+
+**Flashing, cause:** a thread race. @gfx (UI thread) looped over the matrix with the global `mi`,
+which @sample (audio thread) also uses as a loop counter every sample, so each dropdown sometimes
+drew another slot's value. **Fix:** UI loop variables renamed to `ui_*`. The transpiler now does a
+call-graph analysis and rejects any global written by both @gfx and audio code (ADR-013). It
+reports `mi` on the old code.
+
+**Small text, fix:** the UI was redesigned into three tabbed pages on a 960×684 canvas (ADR-012):
+SYNTH / MODULATION (with the full-width mod matrix) / FX + MANGLE. Knobs are bigger, fonts are
+11–13 px logical (about 1.6× larger on screen), captions explain each section, and a mini scope sits
+in the tab bar. Test/demo scripts use the new preset-box coordinates, and a UI test was added
+(tabs, a knob drag on the FX page, a mod-matrix dropdown). Screenshots for all three pages are in docs/.
+Version bumped to 1.1.
+
+**Still to confirm in REAPER:** that the flicker is gone, the text size on the new pages, and CPU while playing.
+

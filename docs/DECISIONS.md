@@ -77,7 +77,7 @@ in REAPER (unmeasured; see the session log's open items).
 
 ## ADR-007: The custom UI is immediate-mode on a scaled logical canvas
 
-**Decision:** `@gfx 1200 810` logical canvas scaled to fit the window. Widgets draw and handle input
+**Decision:** A logical canvas scaled to fit the window (originally 1200×810, one page; see ADR-012). Widgets draw and handle input
 in the same call. Parameters are edited through `p_set()` (records automation) and presets/mutate
 use `p_put()` (only `sliderchange`). UI edits set `ui_dirty`, and `@block` runs `update_params()`
 because `@slider` does not fire for code-side changes. Every parameter stays a real slider, so
@@ -123,3 +123,29 @@ refuses a plugin with `@gfx` and more than 8 visible sliders, so this can't come
 **Consequences:** No generic-slider fallback inside the plugin window. Parameters stay reachable
 through automation envelopes, the Param button, parameter modulation and MIDI learn. If a future
 version wants a few visible sliders (e.g. a compact mode), keep the count small.
+
+## ADR-012: Paged UI (Synth / Modulation / FX + Mangle), larger controls
+
+**Status:** accepted (session 2)
+**Context:** In REAPER on macOS the single-page 1200×810 layout rendered most text at about 9–10 px,
+which is too small. The owner asked for panels/pages, e.g. FX on another page and the mod matrix on its own.
+**Decision:** A 960×684 logical canvas with three tabbed pages: **SYNTH** (engine, beat meter, filter,
+sub/noise, play/output, big scope), **MODULATION** (envelopes, LFOs, 6-row mod matrix),
+**FX + MANGLE** (distortion, movement, mangle, stereo, plus a mini scope in the tab bar). Knobs are
+66×74 with r=19, and base fonts went from 9.5–12 to 11–13 px logical (about 1.5–1.6× larger on screen
+in the same window). The current page is `ui_page` and is not saved with the project.
+**Consequences:** Fewer controls on screen at once, with room for explanatory captions. New
+controls should go on the page that matches their signal-flow stage. Test scripts click by logical
+coordinates at scale 1 (preset box at 450,24; tabs at y 66).
+
+## ADR-013: @gfx must not share writable globals with audio code
+
+**Status:** accepted (session 2)
+**Context:** REAPER runs @gfx in its own thread. The mod-matrix drawing loop used the global `mi`,
+which @sample also uses every sample as a loop counter, so the UI read the wrong slots and the
+dropdowns flickered between values. The single-threaded harness couldn't show this.
+**Decision:** UI globals use the `ui_` prefix. The transpiler computes, through the call graph, which
+globals @gfx writes and which @block/@sample/@slider write, and fails on any overlap except the
+intended `ui_dirty` flag.
+**Consequences:** This class of race is caught before it ships. Reading audio variables from @gfx
+(scope, beat phase, f0) is still allowed, since those are display-only and may be slightly stale.

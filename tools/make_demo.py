@@ -40,7 +40,7 @@ def main():
         sc = os.path.join(a.out, 'p.ui')
         wav = os.path.join(a.out, f'preset{p:02d}.wav')
         with open(sc, 'w') as f:
-            f.write(f'frame\nmenu {p + 1}\nmouse 560 25 1\nframe\nmouse 560 25 0\nframe\n'
+            f.write(f'frame\nmenu {p + 1}\nmouse 450 24 1\nframe\nmouse 450 24 0\nframe\n'
                     f'renderwav {seg:.3f} {ev} {wav}\n')
         subprocess.run([exe, 'gfx', '44100', sc, os.path.join(a.out, 'p.log')], check=True,
                        capture_output=True)

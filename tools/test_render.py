@@ -174,7 +174,7 @@ def main():
         sc = os.path.join(a.out, f'preset{p}.ui')
         wav = os.path.join(a.out, f'preset{p:02d}.wav')
         with open(sc, 'w') as f:
-            f.write(f'frame\nmenu {p + 1}\nmouse 560 25 1\nframe\nmouse 560 25 0\nframe\n'
+            f.write(f'frame\nmenu {p + 1}\nmouse 450 24 1\nframe\nmouse 450 24 0\nframe\n'
                     f'renderwav 3.5 {riff} {wav}\n')
         r = subprocess.run([exe, 'gfx', '44100', sc, os.path.join(a.out, 'p.log')], capture_output=True, text=True)
         x = read_wav(wav)
@@ -185,6 +185,21 @@ def main():
         name = [l for l in r.stderr.split('\n') if '[menu]' in l]
         print(f'  preset {p:2d}: peak {pk:.3f} ({20 * np.log10(pk + 1e-9):5.1f} dB) rms {20 * np.log10(rms + 1e-9):5.1f} dB '
               f'{"OK" if ok else "FAIL"}')
+
+    print('--- UI pages: tabs, knob drag on the FX page, mod matrix dropdown')
+    sc = os.path.join(a.out, 'pages.ui')
+    with open(sc, 'w') as f:
+        f.write('frame\n'
+                'mouse 395 66 1\nframe\nmouse 395 66 0\nframe\n'          # FX + MANGLE tab
+                'mouse 53 156 1\nframe\nmouse 53 96 1\nframe\nmouse 53 96 0\nframe\n'  # drag DRIVE up
+                'mouse 240 66 1\nframe\nmouse 240 66 0\nframe\n'          # MODULATION tab
+                'menu 2\nmouse 600 412 1\nframe\nmouse 600 412 0\nframe\n'  # slot 1 dest -> Cutoff
+                'logframe\ndumpsliders\n')
+    r = subprocess.run([exe, 'gfx', '44100', sc, os.path.join(a.out, 'pages.log')], capture_output=True, text=True)
+    vals = {int(l.split()[0][6:]): float(l.split()[2]) for l in r.stdout.split('\n') if l.startswith('slider')}
+    ok = r.returncode == 0 and vals.get(48, 0) > 10 and vals.get(84) == 1
+    fails += not ok
+    print(f'  dist drive after drag {vals.get(48)}, mod 1 dest {vals.get(84)} {"OK" if ok else "FAIL"}')
 
     print('--- silence after release')
     x, _ = render(exe, a.out, 'release', {}, [(0.0, 36, 100), (0.5, 36, 0)], secs=2)

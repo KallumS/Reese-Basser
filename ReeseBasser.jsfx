@@ -1,7 +1,7 @@
 desc:Reese Basser - Reese bass synthesizer
 tags:instrument synthesizer bass reese
 //author: Reese Basser
-//version: 1.0
+//version: 1.1
 //
 // A monophonic synthesizer that only makes Reese basses, but makes them well.
 // Eight generation methods (engines), tempo-lockable beating, a Reese-focused
@@ -990,12 +990,12 @@ function TX(str, x, y, w, h, flags) (
 );
 function font(n) ( gfx_setfont(n); );
 function setup_fonts(s) (
-  gfx_setfont(1, "Arial", max(8, 10.5*s));
-  gfx_setfont(2, "Arial", max(8, 10*s));
-  gfx_setfont(3, "Arial", max(8, 11.5*s), 98);
-  gfx_setfont(4, "Arial", max(10, 24*s), 98);
-  gfx_setfont(5, "Arial", max(8, 12*s));
-  gfx_setfont(6, "Arial", max(8, 9.5*s));
+  gfx_setfont(1, "Arial", max(8, 12*s));
+  gfx_setfont(2, "Arial", max(8, 11.5*s));
+  gfx_setfont(3, "Arial", max(8, 13*s), 98);
+  gfx_setfont(4, "Arial", max(10, 27*s), 98);
+  gfx_setfont(5, "Arial", max(8, 13*s));
+  gfx_setfont(6, "Arial", max(8, 11*s));
 );
 function inr(x, y, w, h) ( ui_mx >= x && ui_mx < x + w && ui_my >= y && ui_my < y + h; );
 function accent(r, g, b) ( acr = r; acg = g; acb = b; );
@@ -1003,11 +1003,11 @@ function panel(x, y, w, h, title) (
   col(0.105, 0.115, 0.14, 1); RF(x, y, w, h);
   col(acr, acg, acb, 0.9); RF(x, y, w, 2);
   col(0.2, 0.22, 0.26, 1); RO(x, y, w, h);
-  font(3); col(acr, acg, acb, 1); TX(title, x + 10, y + 7, w - 20, 14, 0);
+  font(3); col(acr, acg, acb, 1); TX(title, x + 10, y + 8, w - 20, 16, 0);
 );
 function small_caption(str, x, y, w) (
-  font(6); col(0.5, 0.53, 0.6, 1); TX(str, x, y, w, 10, 1);
-  col(0.28, 0.3, 0.35, 1); LN(x + 4, y + 12, x + w - 4, y + 12);
+  font(6); col(0.5, 0.53, 0.6, 1); TX(str, x, y, w, 12, 1);
+  col(0.28, 0.3, 0.35, 1); LN(x + 4, y + 14, x + w - 4, y + 14);
 );
 
 // ---------------------------------------------------------------- mouse bookkeeping
@@ -1032,10 +1032,10 @@ function wheel_widget(i, hit) (
 );
 
 // ---------------------------------------------------------------- widgets
-// rotary knob, cell 58 x 64
+// rotary knob, cell 66 x 74
 function knob(i, x, y, lbl) local(cx, cy, n, a0, a1, ac, hit, bip, px, py, r, sens) (
-  cx = x + 29; cy = y + 19; r = 15;
-  hit = inr(x + 6, y, 46, 56);
+  cx = x + 33; cy = y + 22; r = 19;
+  hit = inr(x + 5, y, 56, 72);
   begin_widget(i, hit);
   wheel_widget(i, hit);
   ui_drag == i ? (
@@ -1057,15 +1057,15 @@ function knob(i, x, y, lbl) local(cx, cy, n, a0, a1, ac, hit, bip, px, py, r, se
              ( ARC(cx, cy, r, 0, ac); ARC(cx, cy, r - 1, 0, ac); ARC(cx, cy, r - 2, 0, ac); );
   ) : n > 0.002 ? ( ARC(cx, cy, r, a0, ac); ARC(cx, cy, r - 1, a0, ac); ARC(cx, cy, r - 2, a0, ac); );
   // cap and pointer
-  col(0.15, 0.165, 0.2, 1); CI(cx, cy, r - 4.5, 1);
-  col(0.3, 0.33, 0.38, 1); CI(cx, cy, r - 4.5, 0);
-  px = cx + sin(ac)*(r - 5); py = cy - cos(ac)*(r - 5);
-  col(0.92, 0.94, 0.97, 1); LN(cx + sin(ac)*(r - 11), cy - cos(ac)*(r - 11), px, py);
+  col(0.15, 0.165, 0.2, 1); CI(cx, cy, r - 5, 1);
+  col(0.3, 0.33, 0.38, 1); CI(cx, cy, r - 5, 0);
+  px = cx + sin(ac)*(r - 6); py = cy - cos(ac)*(r - 6);
+  col(0.92, 0.94, 0.97, 1); LN(cx + sin(ac)*(r - 13), cy - cos(ac)*(r - 13), px, py);
   // labels
-  font(6); col(0.62, 0.65, 0.72, 1); TX(lbl, x - 2, y + 37, 62, 10, 1);
+  font(6); col(0.66, 0.69, 0.76, 1); TX(lbl, x - 4, y + 45, 74, 12, 1);
   font(2);
   hit || ui_drag == i ? col(1, 1, 1, 1) : col(acr*0.5 + 0.4, acg*0.5 + 0.4, acb*0.5 + 0.4, 1);
-  TX(fmt_val(#kv, i), x - 4, y + 49, 66, 11, 1);
+  TX(fmt_val(#kv, i), x - 6, y + 59, 78, 13, 1);
 );
 // dropdown box
 function dropdown(i, x, y, w, h) local(hit, old) (
@@ -1347,7 +1347,7 @@ function mutate(mode) local(i, s) (
 );
 
 gfx_ext_retina = 1;
-ui_drag = 0; cur_preset = 0; preset_edited = 0; preset_loaded_once = 0;
+ui_drag = 0; ui_page = 0; cur_preset = 0; preset_edited = 0; preset_loaded_once = 0;
 
 @slider
 update_params();
@@ -1759,9 +1759,12 @@ throb_n >= 512 ? (
 );
 ui_f0 = f0; ui_beat = beat_eff; ui_fc = fc;
 
-@gfx 1200 810
+@gfx 960 684
 // ---------------------------------------------------------------- frame setup
-UI_W = 1200; UI_H = 810;
+// Paged UI on a 960 x 684 logical canvas, scaled to the window. Pages: 0 synth, 1 mod, 2 fx.
+// NOTE: @gfx runs in its own thread - only use ui_* globals (or function locals) here, never
+// variables the audio code writes (the transpiler rejects shared writes).
+UI_W = 960; UI_H = 684;
 ui_s = min(gfx_w/UI_W, gfx_h/UI_H);
 ui_s <= 0 ? ui_s = 1;
 ui_ox = floor((gfx_w - UI_W*ui_s)*0.5); ui_oy = floor((gfx_h - UI_H*ui_s)*0.5);
@@ -1781,193 +1784,240 @@ col(0.075, 0.08, 0.095, 1); gfx_rect(0, 0, gfx_w, gfx_h);
 
 // ---------------------------------------------------------------- header
 accent(0.24, 0.9, 0.76);
-font(4); col(0.95, 0.97, 1, 1); TX("REESE", 14, 10, 100, 30, 4);
-col(acr, acg, acb, 1); TX("BASSER", 104, 10, 120, 30, 4);
-font(6); col(0.5, 0.53, 0.6, 1); TX("detuned bass synthesizer", 16, 41, 200, 10, 0);
+font(4); col(0.95, 0.97, 1, 1); TX("REESE", 14, 6, 100, 30, 4);
+col(acr, acg, acb, 1); TX("BASSER", 118, 6, 130, 30, 4);
+font(6); col(0.5, 0.53, 0.6, 1); TX("detuned bass synthesizer", 16, 35, 220, 11, 0);
 // preset selector
-accent(0.24, 0.9, 0.76);
-col(0.07, 0.075, 0.09, 1); RF(400, 12, 330, 28);
-col(0.25, 0.27, 0.32, 1); RO(400, 12, 330, 28);
-button("<", 372, 12, 26, 28) ? ( load_preset(cur_preset > 0 ? cur_preset - 1 : NUM_PRESETS - 1); );
-button(">", 732, 12, 26, 28) ? ( load_preset(cur_preset < NUM_PRESETS - 1 ? cur_preset + 1 : 0); );
+col(0.07, 0.075, 0.09, 1); RF(292, 8, 290, 32);
+col(0.25, 0.27, 0.32, 1); RO(292, 8, 290, 32);
+button("<", 262, 8, 28, 32) ? ( load_preset(cur_preset > 0 ? cur_preset - 1 : NUM_PRESETS - 1); preset_loaded_once = 1; );
+button(">", 584, 8, 28, 32) ? ( load_preset(cur_preset < NUM_PRESETS - 1 ? cur_preset + 1 : 0); preset_loaded_once = 1; );
 font(5); col(0.92, 0.94, 0.97, 1);
 list_item(#pn, PRESETS, cur_preset);
 preset_edited ? strcat(#pn, " *");
 !preset_loaded_once && !preset_edited ? strcpy(#pn, "Custom / Project Patch");
-TX(#pn, 400, 12, 330, 28, 5);
-inr(400, 12, 330, 28) && ui_click ? (
-  gfx_x = ui_ox + 400*ui_s; gfx_y = ui_oy + 40*ui_s;
+TX(#pn, 292, 8, 290, 32, 5);
+inr(292, 8, 290, 32) && ui_click ? (
+  gfx_x = ui_ox + 292*ui_s; gfx_y = ui_oy + 40*ui_s;
   ui_res = gfx_showmenu(build_menu(#menu, PRESETS, preset_loaded_once ? cur_preset : -1));
   ui_res > 0 ? ( load_preset(ui_res - 1); preset_loaded_once = 1; );
   ui_click = 0;
 );
 accent(1.0, 0.35, 0.55);
-button("MUTATE", 790, 12, 100, 28) ? (
-  gfx_x = ui_ox + 790*ui_s; gfx_y = ui_oy + 40*ui_s;
+button("MUTATE", 628, 8, 110, 32) ? (
+  gfx_x = ui_ox + 628*ui_s; gfx_y = ui_oy + 40*ui_s;
   ui_res = gfx_showmenu("Mutate engine|Mutate mangle + movement|Mutate modulation|Mutate everything||Nudge all (subtle)");
   ui_res > 0 ? mutate(ui_res - 1);
 );
 // live readout
 font(6); col(0.5, 0.53, 0.6, 1);
-sprintf(#ro, "note %.1f Hz   beat %.2f Hz", ui_f0, abs(ui_beat));
-TX(#ro, 900, 14, 290, 12, 2);
-sprintf(#ro, "%s   %dx oversampling", aenv_o.st > 0 ? "voice on" : "idle", os);
-TX(#ro, 900, 28, 290, 12, 2);
+sprintf(#ro, "note %.1f Hz", ui_f0); TX(#ro, 750, 8, 198, 12, 2);
+sprintf(#ro, "beat %.2f Hz", abs(ui_beat)); TX(#ro, 750, 21, 198, 12, 2);
+sprintf(#ro, "%s  |  %dx oversampling", aenv_o.st > 0 ? "voice on" : "idle", quality == 0 ? 1 : quality == 1 ? 2 : 4);
+TX(#ro, 750, 34, 198, 12, 2);
 
-// ---------------------------------------------------------------- ENGINE
-accent(0.24, 0.9, 0.76);
-panel(10, 56, 612, 200, "OSCILLATOR ENGINE");
-dropdown(1, 170, 62, 250, 22) ? engine_defaults();
-// double-click defaults of A/B/C follow the current engine
-PDEF[6] = ENGDEF[eng*3]; PDEF[7] = ENGDEF[eng*3 + 1]; PDEF[8] = ENGDEF[eng*3 + 2];
-font(6); col(0.55, 0.58, 0.65, 1); TX(ENGDESC[eng], 20, 88, 590, 12, 0);
-detmode == 0 ? knob(2, 18, 108, "DETUNE") : detmode == 1 ? knob(4, 18, 108, "BEAT HZ") : knob(5, 18, 108, "BEAT SYNC");
-knob(6, 76, 108, ENGLBL[eng*3]);
-knob(7, 134, 108, ENGLBL[eng*3 + 1]);
-knob(8, 192, 108, ENGLBL[eng*3 + 2]);
-eng != 1 ? knob(9, 250, 108, "UNISON") : ( font(6); col(0.35, 0.37, 0.42, 1); TX("UNISON", 250, 145, 58, 10, 1); TX("(n/a)", 250, 157, 58, 10, 1); );
-eng != 1 ? knob(10, 308, 108, "UNI DET") : ( font(6); col(0.35, 0.37, 0.42, 1); TX("UNI DET", 308, 145, 58, 10, 1); );
-knob(11, 366, 108, "STEREO");
-knob(12, 424, 108, "DRIFT");
-knob(14, 482, 108, "LEVEL");
-knob(79, 540, 108, "OCTAVE");
-small_caption("DETUNE MODE", 20, 184, 186);
-segs(3, 20, 200, 186, 20);
-small_caption("OSC PHASE", 220, 184, 186);
-segs(13, 220, 200, 186, 20);
-font(6); col(0.5, 0.53, 0.6, 1);
-TX(detmode == 0 ? "beat rate follows pitch" : detmode == 1 ? "same beat rate on every note" : "beat locked to the song grid", 20, 226, 186, 10, 1);
-TX(phasemode == 0 ? "oscillators never reset" : phasemode == 1 ? "same attack on every note" : "random start phase", 220, 226, 186, 10, 1);
-small_caption("BEAT", 420, 184, 190);
-col(0.07, 0.075, 0.09, 1); RF(420, 200, 190, 20);
-bv = 0.5 + 0.5*cos(2*$pi*beat_ph);
-col(acr, acg, acb, 0.25 + 0.6*bv); RF(422, 202, 186*bv, 16);
-col(0.25, 0.27, 0.32, 1); RO(420, 200, 190, 20);
-font(6); col(0.95, 0.97, 1, 1); sprintf(#bt, "%.2f Hz  (%.2f s)", abs(ui_beat), 1/max(abs(ui_beat), 0.001)); TX(#bt, 420, 200, 190, 20, 5);
-col(0.5, 0.53, 0.6, 1); TX("pair beating (the Reese throb)", 420, 226, 190, 10, 1);
-
-// ---------------------------------------------------------------- FILTER
-accent(1.0, 0.72, 0.2);
-panel(630, 56, 304, 200, "FILTER");
-dropdown(21, 720, 62, 204, 22);
-knob(22, 640, 90, "CUTOFF");
-knob(23, 698, 90, "RESO");
-knob(24, 756, 90, "DRIVE");
-knob(25, 814, 90, "KEY");
-knob(26, 872, 90, "ENV");
-draw_filter_curve(640, 164, 284, 82);
-
-// ---------------------------------------------------------------- SCOPE
-accent(0.24, 0.9, 0.76);
-panel(942, 56, 248, 200, "SCOPE / THROB");
-draw_scope(952, 80, 228, 110);
-draw_throb(952, 196, 228, 50);
-
-// ---------------------------------------------------------------- envelopes
-accent(0.35, 0.65, 1.0);
-panel(10, 264, 250, 170, "AMP ENVELOPE");
-draw_env(20, 288, 230, 40, 27);
-knob(27, 14, 340, "ATTACK"); knob(28, 74, 340, "DECAY"); knob(29, 134, 340, "SUSTAIN"); knob(30, 194, 340, "RELEASE");
-font(6); col(0.5, 0.53, 0.6, 1); TX("velocity", 20, 408, 60, 12, 0);
-panel(268, 264, 250, 170, "MOD ENVELOPE");
-draw_env(278, 288, 230, 40, 31);
-knob(31, 272, 340, "ATTACK"); knob(32, 332, 340, "DECAY"); knob(33, 392, 340, "SUSTAIN"); knob(34, 452, 340, "RELEASE");
-font(6); col(0.5, 0.53, 0.6, 1); TX("routes via mod matrix + filter ENV", 278, 412, 230, 12, 1);
-// velocity sensitivity lives with the amp envelope
-accent(0.35, 0.65, 1.0);
-hbar(78, 70, 406, 180, 16);
-
-// ---------------------------------------------------------------- LFOs
-function lfo_panel(x, base, title) (
-  panel(x, 264, 212, 170, title);
-  dropdown(base, x + 60, 268, 142, 20);
-  draw_lfo(x + 10, 294, 192, 30, slider(base));
-  slider(base + 1) ? knob(base + 3, x + 6, 334, "RATE") : knob(base + 2, x + 6, 334, "RATE");
-  knob(base + 5, x + 64, 334, "FADE IN");
-  segs(base + 1, x + 126, 338, 78, 18);
-  segs(base + 4, x + 126, 362, 78, 18);
-  font(6); col(0.5, 0.53, 0.6, 1); TX("sync / trigger", x + 126, 384, 78, 10, 1);
+// ---------------------------------------------------------------- page tabs
+function tab(str, x, w, page) local(hit, on) (
+  hit = inr(x, 52, w, 30); on = ui_page == page;
+  on ? col(acr*0.45, acg*0.45, acb*0.45, 1) : col(hit ? 0.15 : 0.11, hit ? 0.165 : 0.12, hit ? 0.2 : 0.145, 1);
+  RF(x, 52, w, 30);
+  col(acr, acg, acb, on ? 1 : 0.35); RF(x, 79, w, 3);
+  col(0.22, 0.24, 0.28, 1); RO(x, 52, w, 30);
+  font(3); on ? col(1, 1, 1, 1) : col(0.62, 0.65, 0.72, 1); TX(str, x, 52, w, 30, 5);
+  hit && ui_click ? ( ui_page = page; ui_click = 0; );
 );
-accent(0.35, 0.65, 1.0);
-lfo_panel(526, 35, "LFO 1");
-lfo_panel(746, 41, "LFO 2");
-
-// ---------------------------------------------------------------- DISTORTION
-accent(1.0, 0.35, 0.55);
-panel(966, 264, 224, 170, "DISTORTION");
-dropdown(47, 1060, 268, 120, 20);
-knob(48, 972, 300, "DRIVE"); knob(49, 1030, 300, "TONE"); knob(50, 1088, 300, "MIX");
-segs(51, 980, 376, 200, 20);
-font(6); col(0.5, 0.53, 0.6, 1); TX("post filter = classic, pre = gnarly", 976, 402, 204, 10, 1);
-
-// ---------------------------------------------------------------- MOVEMENT
-accent(0.7, 0.5, 1.0);
-panel(10, 442, 366, 170, "MOVEMENT");
-dropdown(52, 110, 446, 150, 20);
-knob(53, 14, 480, "FREQ"); knob(54, 72, 480, "DEPTH"); knob(55, 130, 480, "RATE");
-knob(56, 188, 480, "RESO"); knob(57, 246, 480, "STEREO"); knob(58, 304, 480, "MIX");
-font(6); col(0.5, 0.53, 0.6, 1);
-TX("tempo-synced notches / phaser / flanger", 20, 556, 346, 10, 1);
-
-// ---------------------------------------------------------------- MANGLE
-accent(1.0, 0.35, 0.55);
-panel(384, 442, 600, 170, "MANGLE");
-small_caption("FORMANT", 392, 468, 116); small_caption("FREQ SHIFT", 508, 468, 116);
-small_caption("RING MOD", 624, 468, 116); small_caption("CRUSH", 740, 468, 174);
-small_caption("SQUASH", 914, 468, 62);
-knob(59, 392, 486, "VOWEL"); knob(60, 450, 486, "MIX");
-knob(61, 508, 486, "SHIFT"); knob(62, 566, 486, "MIX");
-knob(63, 624, 486, "RATIO"); knob(64, 682, 486, "MIX");
-knob(65, 740, 486, "BITS"); knob(66, 798, 486, "DOWN"); knob(67, 856, 486, "MIX");
-knob(68, 914, 486, "AMOUNT");
-font(6); col(0.5, 0.53, 0.6, 1);
-TX("signal flow: formant > ring > shift > crush > movement > squash (multiband up/down compressor)", 392, 562, 584, 10, 1);
-
-// ---------------------------------------------------------------- STEREO
-accent(0.7, 0.5, 1.0);
-panel(992, 442, 198, 170, "STEREO");
-knob(69, 996, 468, "CHORUS"); knob(70, 1054, 468, "RATE"); knob(71, 1112, 468, "DEPTH");
-knob(72, 1016, 536, "WIDTH"); knob(73, 1086, 536, "MONO <");
-
-// ---------------------------------------------------------------- SUB / NOISE
-accent(0.55, 0.85, 0.35);
-panel(10, 620, 300, 170, "SUB + NOISE");
-knob(15, 16, 650, "SUB"); knob(18, 76, 650, "NOISE"); knob(19, 136, 650, "COLOR"); knob(20, 196, 650, "LOW CUT");
-font(6); col(0.5, 0.53, 0.6, 1);
-small_caption("SUB WAVE", 20, 718, 170); segs(16, 20, 734, 170, 18);
-small_caption("SUB OCT", 200, 718, 100); segs(17, 200, 734, 100, 18);
-font(6); col(0.5, 0.53, 0.6, 1);
-TX("sub is mono + bypasses FX; low cut filters the Reese only", 20, 760, 280, 10, 0);
-
-// ---------------------------------------------------------------- MOD MATRIX
-accent(0.35, 0.65, 1.0);
-panel(318, 620, 560, 170, "MOD MATRIX");
-mi = 0;
-loop(6,
-  mx_ = 328 + (mi >= 3 ? 276 : 0); my_ = 646 + (mi % 3)*42;
-  font(6); col(0.45, 0.48, 0.55, 1); sprintf(#mn, "%d", mi + 1); TX(#mn, mx_, my_, 10, 18, 4);
-  dropdown(83 + mi*3, mx_ + 12, my_, 120, 18);
-  dropdown(84 + mi*3, mx_ + 136, my_, 124, 18);
-  hbar(85 + mi*3, mx_ + 12, my_ + 21, 248, 12);
-  mi += 1;
+accent(0.24, 0.9, 0.76); tab("SYNTH", 10, 150, 0);
+accent(0.35, 0.65, 1.0); tab("MODULATION", 166, 150, 1);
+accent(1.0, 0.35, 0.55); tab("FX + MANGLE", 322, 150, 2);
+// mini scope so the throb stays visible on every page
+ui_page != 0 ? (
+  accent(0.24, 0.9, 0.76);
+  draw_scope(620, 52, 330, 30);
+  col(0.22, 0.24, 0.28, 1); RO(620, 52, 330, 30);
 );
 
-// ---------------------------------------------------------------- GLOBAL
-accent(0.8, 0.82, 0.86);
-panel(886, 620, 304, 170, "PLAY + OUTPUT");
-knob(75, 890, 646, "GLIDE"); knob(77, 948, 646, "BEND"); knob(81, 1006, 646, "OUTPUT");
-small_caption("NOTES", 1066, 648, 118); segs(74, 1066, 664, 118, 18);
-small_caption("GLIDE", 1066, 690, 118); segs(76, 1066, 706, 118, 18);
-small_caption("OVERSAMPLING", 896, 726, 150); segs(80, 896, 742, 150, 18);
-small_caption("CLIPPER", 1066, 726, 118); segs(82, 1066, 742, 118, 18);
+// ================================================================ PAGE: SYNTH
+ui_page == 0 ? (
+  // -------------------------------------------------------------- engine
+  accent(0.24, 0.9, 0.76);
+  panel(10, 92, 600, 300, "OSCILLATOR ENGINE");
+  dropdown(1, 200, 97, 270, 24) ? engine_defaults();
+  // double-click defaults of A/B/C follow the current engine
+  PDEF[6] = ENGDEF[eng*3]; PDEF[7] = ENGDEF[eng*3 + 1]; PDEF[8] = ENGDEF[eng*3 + 2];
+  font(6); col(0.55, 0.58, 0.65, 1); TX(ENGDESC[eng], 20, 126, 580, 12, 0);
+  detmode == 0 ? knob(2, 18, 148, "DETUNE") : detmode == 1 ? knob(4, 18, 148, "BEAT HZ") : knob(5, 18, 148, "BEAT SYNC");
+  knob(6, 90, 148, ENGLBL[eng*3]);
+  knob(7, 162, 148, ENGLBL[eng*3 + 1]);
+  knob(8, 234, 148, ENGLBL[eng*3 + 2]);
+  eng != 1 ? (
+    knob(9, 306, 148, "UNISON"); knob(10, 378, 148, "UNI DET");
+  ) : (
+    font(6); col(0.35, 0.37, 0.42, 1);
+    TX("UNISON", 306, 194, 66, 12, 1); TX("UNI DET", 378, 194, 66, 12, 1);
+    TX("(supersaw", 306, 208, 138, 12, 1); TX("has its own voices)", 306, 220, 138, 12, 1);
+  );
+  knob(11, 450, 148, "STEREO");
+  knob(12, 522, 148, "DRIFT");
+  small_caption("DETUNE MODE", 20, 230, 180);
+  segs(3, 20, 246, 180, 24);
+  small_caption("OSC PHASE", 212, 230, 180);
+  segs(13, 212, 246, 180, 24);
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX(detmode == 0 ? "beat follows pitch" : detmode == 1 ? "same beat on every note" : "beat locked to the grid", 20, 274, 180, 12, 1);
+  TX(phasemode == 0 ? "never reset" : phasemode == 1 ? "same attack every note" : "random start", 212, 274, 180, 12, 1);
+  knob(14, 450, 228, "LEVEL");
+  knob(79, 522, 228, "OCTAVE");
+  small_caption("BEAT (the Reese throb)", 20, 304, 580);
+  col(0.07, 0.075, 0.09, 1); RF(20, 322, 580, 28);
+  ui_bv = 0.5 + 0.5*cos(2*$pi*beat_ph);
+  col(acr, acg, acb, 0.25 + 0.6*ui_bv); RF(22, 324, 576*ui_bv, 24);
+  col(0.25, 0.27, 0.32, 1); RO(20, 322, 580, 28);
+  font(5); col(0.95, 0.97, 1, 1);
+  sprintf(#bt, "%.2f Hz   (one throb every %.2f s)", abs(ui_beat), 1/max(abs(ui_beat), 0.001));
+  TX(#bt, 20, 322, 580, 28, 5);
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("Tip: Hz or Sync mode keeps the throb speed the same across a whole bassline", 20, 358, 580, 12, 1);
+
+  // -------------------------------------------------------------- scope
+  panel(620, 92, 330, 300, "SCOPE / THROB");
+  draw_scope(630, 120, 310, 170);
+  font(6); col(0.5, 0.53, 0.6, 1); TX("level over the last 3 s", 630, 296, 310, 12, 0);
+  draw_throb(630, 312, 310, 70);
+
+  // -------------------------------------------------------------- filter
+  accent(1.0, 0.72, 0.2);
+  panel(10, 400, 410, 262, "FILTER");
+  dropdown(21, 110, 405, 300, 24);
+  knob(22, 18, 438, "CUTOFF"); knob(23, 98, 438, "RESO"); knob(24, 178, 438, "DRIVE");
+  knob(25, 258, 438, "KEY"); knob(26, 338, 438, "ENV");
+  draw_filter_curve(20, 520, 390, 132);
+
+  // -------------------------------------------------------------- sub + noise
+  accent(0.55, 0.85, 0.35);
+  panel(430, 400, 250, 262, "SUB + NOISE");
+  knob(15, 438, 430, "SUB"); knob(18, 518, 430, "NOISE"); knob(19, 598, 430, "COLOR");
+  knob(20, 438, 512, "LOW CUT");
+  small_caption("SUB OCT", 518, 516, 150); segs(17, 518, 532, 150, 22);
+  small_caption("SUB WAVE", 440, 590, 230); segs(16, 440, 606, 230, 22);
+  font(6); col(0.5, 0.53, 0.6, 1); TX("sub: mono, no FX   low cut: Reese only", 440, 636, 230, 12, 1);
+
+  // -------------------------------------------------------------- play + output
+  accent(0.8, 0.82, 0.86);
+  panel(690, 400, 260, 262, "PLAY + OUTPUT");
+  knob(75, 698, 430, "GLIDE"); knob(77, 778, 430, "BEND"); knob(81, 858, 430, "OUTPUT");
+  small_caption("NOTES", 700, 514, 115); segs(74, 700, 530, 115, 22);
+  small_caption("GLIDE", 825, 514, 115); segs(76, 825, 530, 115, 22);
+  small_caption("OVERSAMPLING", 700, 566, 115); segs(80, 700, 582, 115, 22);
+  small_caption("CLIPPER", 825, 566, 115); segs(82, 825, 582, 115, 22);
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("overlap notes to glide (legato)", 700, 616, 240, 12, 1);
+  TX("1x = light CPU, 4x = cleanest drive", 700, 632, 240, 12, 1);
+);
+
+// ================================================================ PAGE: MODULATION
+function lfo_panel(x, y, w, h, base, title) (
+  panel(x, y, w, h, title);
+  dropdown(base, x + 70, y + 5, w - 80, 24);
+  draw_lfo(x + 10, y + 36, w - 20, 54, slider(base));
+  slider(base + 1) ? knob(base + 3, x + 8, y + 100, "RATE") : knob(base + 2, x + 8, y + 100, "RATE");
+  knob(base + 5, x + 80, y + 100, "FADE IN");
+  small_caption("SYNC", x + 160, y + 96, w - 170); segs(base + 1, x + 160, y + 112, w - 170, 22);
+  small_caption("TRIGGER", x + 160, y + 140, w - 170); segs(base + 4, x + 160, y + 156, w - 170, 22);
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("route it in the mod matrix", x + 10, y + 196, w - 20, 12, 1);
+  TX("BPM + Free = locked to the song", x + 10, y + 212, w - 20, 12, 1);
+);
+ui_page == 1 ? (
+  accent(0.35, 0.65, 1.0);
+  panel(10, 92, 305, 262, "AMP ENVELOPE");
+  draw_env(20, 122, 285, 66, 27);
+  knob(27, 18, 198, "ATTACK"); knob(28, 90, 198, "DECAY"); knob(29, 162, 198, "SUSTAIN"); knob(30, 234, 198, "RELEASE");
+  small_caption("VELOCITY SENSITIVITY", 20, 290, 285);
+  hbar(78, 20, 308, 285, 22);
+  panel(325, 92, 305, 262, "MOD ENVELOPE");
+  draw_env(335, 122, 285, 66, 31);
+  knob(31, 333, 198, "ATTACK"); knob(32, 405, 198, "DECAY"); knob(33, 477, 198, "SUSTAIN"); knob(34, 549, 198, "RELEASE");
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("drives the filter ENV knob and any", 335, 292, 285, 12, 1);
+  TX("mod matrix slot using 'Mod Env'", 335, 308, 285, 12, 1);
+  lfo_panel(640, 92, 310, 262, 35, "LFO 1");
+  lfo_panel(10, 362, 305, 300, 41, "LFO 2");
+
+  panel(325, 362, 625, 300, "MOD MATRIX");
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("source  ->  destination   amount (drag; double-click = 0)", 470, 368, 470, 14, 2);
+  ui_mi = 0;
+  loop(6,
+    ui_my_ = 400 + ui_mi*42;
+    font(3); col(0.45, 0.48, 0.55, 1); sprintf(#mn, "%d", ui_mi + 1); TX(#mn, 335, ui_my_, 14, 26, 4);
+    dropdown(83 + ui_mi*3, 352, ui_my_, 170, 26);
+    dropdown(84 + ui_mi*3, 530, ui_my_, 190, 26);
+    hbar(85 + ui_mi*3, 728, ui_my_, 212, 26);
+    ui_mi += 1;
+  );
+);
+
+// ================================================================ PAGE: FX + MANGLE
+ui_page == 2 ? (
+  accent(1.0, 0.35, 0.55);
+  panel(10, 92, 300, 262, "DISTORTION");
+  dropdown(47, 130, 97, 170, 24);
+  knob(48, 18, 134, "DRIVE"); knob(49, 96, 134, "TONE"); knob(50, 174, 134, "MIX");
+  small_caption("POSITION", 20, 222, 280); segs(51, 20, 238, 280, 24);
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("post filter = classic, pre = gnarly", 20, 270, 280, 12, 1);
+  TX("oversampled; drive 0 = off", 20, 286, 280, 12, 1);
+
+  accent(0.7, 0.5, 1.0);
+  panel(320, 92, 630, 262, "MOVEMENT");
+  dropdown(52, 440, 97, 220, 24);
+  knob(53, 330, 134, "FREQ"); knob(54, 420, 134, "DEPTH"); knob(55, 510, 134, "RATE");
+  knob(56, 600, 134, "RESO"); knob(57, 690, 134, "STEREO"); knob(58, 780, 134, "MIX");
+  font(5); col(0.62, 0.65, 0.72, 1);
+  TX(mvtype == 0 ? "Off - pick a type above" :
+     mvtype == 1 ? "Two notches an octave apart sweep the harmonics (neuro style)" :
+     mvtype == 2 ? "6-stage phaser with feedback, swept in time with the song" :
+                   "Comb filter tuned by FREQ, swept by DEPTH, RESO = feedback", 330, 230, 610, 16, 1);
+  font(6); col(0.5, 0.53, 0.6, 1); TX("RATE is a tempo division", 330, 254, 610, 12, 1);
+
+  accent(1.0, 0.35, 0.55);
+  panel(10, 362, 700, 300, "MANGLE");
+  small_caption("FORMANT", 20, 392, 136); small_caption("FREQ SHIFT", 158, 392, 136);
+  small_caption("RING MOD", 296, 392, 136); small_caption("CRUSH", 434, 392, 204);
+  small_caption("SQUASH", 640, 392, 66);
+  knob(59, 20, 412, "VOWEL"); knob(60, 88, 412, "MIX");
+  knob(61, 158, 412, "SHIFT"); knob(62, 226, 412, "MIX");
+  knob(63, 296, 412, "RATIO"); knob(64, 364, 412, "MIX");
+  knob(65, 434, 412, "BITS"); knob(66, 502, 412, "DOWN"); knob(67, 570, 412, "MIX");
+  knob(68, 640, 412, "AMOUNT");
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("talking A-E-I-O-U", 20, 494, 136, 12, 1);
+  TX("inharmonic / barber-pole", 158, 494, 136, 12, 1);
+  TX("in tune with the note", 296, 494, 136, 12, 1);
+  TX("bits + sample rate", 434, 494, 204, 12, 1);
+  TX("OTT-ish", 640, 494, 66, 12, 1);
+  small_caption("SIGNAL FLOW", 20, 540, 680);
+  font(5); col(0.62, 0.65, 0.72, 1);
+  TX("voice  >  formant  >  ring  >  shift  >  crush  >  movement  >  squash  >  stereo  >  + sub", 20, 562, 680, 16, 1);
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("MUTATE (top) randomises these for happy accidents", 20, 600, 680, 12, 1);
+
+  accent(0.7, 0.5, 1.0);
+  panel(720, 362, 230, 300, "STEREO");
+  knob(69, 728, 392, "CHORUS"); knob(70, 800, 392, "RATE"); knob(71, 872, 392, "DEPTH");
+  knob(72, 764, 480, "WIDTH"); knob(73, 836, 480, "MONO <");
+  font(6); col(0.5, 0.53, 0.6, 1);
+  TX("everything below MONO <", 730, 572, 210, 12, 1);
+  TX("is summed to mono", 730, 586, 210, 12, 1);
+);
 
 // ---------------------------------------------------------------- footer / help line
 font(6); col(0.45, 0.48, 0.55, 1);
 ui_hov > 0 ? (
   sprintf(#ft, "%s: %s", PNAME[ui_hov], fmt_val(#fv, ui_hov));
-  TX(#ft, 12, 794, 600, 12, 0);
-) : TX("drag = adjust   shift+drag = fine   double-click / ctrl+click = default   wheel = step", 12, 794, 600, 12, 0);
-TX("Reese Basser 1.0", 900, 794, 288, 12, 2);
+  TX(#ft, 12, 668, 600, 12, 0);
+) : TX("drag = adjust   shift+drag = fine   double-click / ctrl+click = default   wheel = step", 12, 668, 600, 12, 0);
+TX("Reese Basser 1.1", 750, 668, 198, 12, 2);
 
 mouse_wheel = 0;
 ui_last_cap = mouse_cap;

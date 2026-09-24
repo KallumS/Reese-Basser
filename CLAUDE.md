@@ -54,6 +54,8 @@ so **run the test suite before every push**, and render a UI PNG after any `@gfx
 - `@slider` does not run for UI edits. The UI sets `ui_dirty=1` and `@block` calls `update_params()`.
 - Notify the host with the slider variable itself: `sliderchange(cutoff)`,
   `slider_automate(cutoff, done)` (generated dispatch in `notify()`/`automate()`).
+- `@gfx` runs concurrently with audio: never write a global in @gfx that audio code also writes
+  (use `ui_*` names). The transpiler enforces this (`ui_dirty` is the one allowed shared flag).
 - Every slider name starts with `-` (hidden). REAPER puts visible sliders above the `@gfx` area,
   so 100 visible sliders hid the whole UI in REAPER (ADR-011). New sliders must be hidden too.
 - Memory index = `floor(v + 0.00001)`; `%` works on absolute integer values; `x == y` means |x−y| < 1e-5.
@@ -71,8 +73,12 @@ so **run the test suite before every push**, and render a UI PNG after any `@gfx
   per-osc freqs → **oversampled loop** (engine → noise → [pre-dist] → filter → [post-dist] → decimate)
   → DC block → VCA → formant → ring → shift → crush → movement → squash → low cut → chorus → width
   → mono-bass → + sub → pan/volume/clipper → scope buffers.
-- `@gfx 1200 810`: immediate-mode UI on a 1200×810 logical canvas scaled to the window
-  (`ui_s`, `ui_ox/oy`). Widgets: `knob`, `dropdown`, `segs`, `hbar`, `button`.
+- `@gfx 960 684`: immediate-mode UI on a 960×684 logical canvas scaled to the window
+  (`ui_s`, `ui_ox/oy`), with 3 pages chosen by `ui_page` (0 SYNTH, 1 MODULATION, 2 FX + MANGLE).
+  Widgets: `knob` (66×74 cell), `dropdown`, `segs`, `hbar`, `button`, `tab`.
+  **@gfx runs in its own thread**: its globals must be `ui_*` (or function locals), never a
+  variable the audio code writes. A shared `mi` loop counter made the mod matrix flicker in
+  REAPER; the transpiler now rejects any global written by both @gfx and audio code.
 
 Memory map (slots): MQ 0, NOTESTK 8200, per-osc arrays O_* 9000–9831 (stride 64; `O_FB[k+32]` holds
 osc levels), SRC/MODV/MSRC/MDST/MAMT/BEATS/INTV/FMR 10000–10120, phaser/Hilbert states 10400–10600,

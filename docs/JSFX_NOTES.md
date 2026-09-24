@@ -8,6 +8,9 @@ Where a behaviour has already caused a bug, it is marked ⚠.
 ## File structure
 - `desc:` once, first line. `tags:` is a real directive, **not a comment**. With `tags:instrument`
   (6.74+) the plugin appears under *Instruments* in the FX browser. ⚠ (was `//tags:` in v1) ✔ used
+- **REAPER draws visible sliders above the `@gfx` area.** With many sliders the custom UI is pushed
+  out of the window and the user sees only sliders. ⚠ (session 2, fixed by hiding all sliders
+  with `-`; the transpiler errors on >8 visible sliders when `@gfx` exists) ✔ used
 - `sliderN:var=def<min,max,step{a,b,c}>Name`: up to **256** sliders. Enum lists need min 0 / step 1.
   A `-` prefix on the name hides the slider. Shapes (6.74+): `:log`, `:log=mid`, `:sqr`, `:sqr=exp`;
   `:log!`/`:sqr!` keep automation compatible. Changing a slider's shape later affects saved automation. ✔ used

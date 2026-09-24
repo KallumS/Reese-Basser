@@ -54,6 +54,8 @@ so **run the test suite before every push**, and render a UI PNG after any `@gfx
 - `@slider` does not run for UI edits. The UI sets `ui_dirty=1` and `@block` calls `update_params()`.
 - Notify the host with the slider variable itself: `sliderchange(cutoff)`,
   `slider_automate(cutoff, done)` (generated dispatch in `notify()`/`automate()`).
+- Every slider name starts with `-` (hidden). REAPER puts visible sliders above the `@gfx` area,
+  so 100 visible sliders hid the whole UI in REAPER (ADR-011). New sliders must be hidden too.
 - Memory index = `floor(v + 0.00001)`; `%` works on absolute integer values; `x == y` means |x−y| < 1e-5.
 
 ## Code map (search for these banners)

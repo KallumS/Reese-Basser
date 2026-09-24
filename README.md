@@ -25,9 +25,10 @@ and uses slider shaping). REAPER 7 is recommended.
 Every control is a normal REAPER parameter, so automation, REAPER's own **Parameter
 Modulation** (LFO / audio follower / MIDI link) and **FX Parameter MIDI Learn** work on all of them.
 
-The custom UI scales to any window size. REAPER's generic slider view (the
-"+"/"UI" button in the FX window) lists all 100 parameters with readable names,
-which is useful for automation and MIDI learn.
+The custom UI scales to any window size. The 100 parameters are hidden from REAPER's
+plain slider list (otherwise that list pushes the UI out of the window), but they still
+appear by name in automation envelopes, the **Param** button menu, parameter modulation
+and MIDI learn.
 
 ---
 

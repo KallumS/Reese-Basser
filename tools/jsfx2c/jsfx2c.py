@@ -651,6 +651,13 @@ def main():
     for line in header:
         if line.startswith('import '):
             raise SyntaxError('import not supported by harness')
+    if 'gfx' in sections:
+        visible = [i for i, sl in sliders.items() if not sl['label'].startswith('-')]
+        if len(visible) > 8:
+            # REAPER draws visible sliders ABOVE the @gfx area: a long list pushes the custom
+            # UI out of the window (seen in REAPER with 100 visible sliders). Hide with "-".
+            raise SyntaxError(f'{len(visible)} visible sliders with a custom @gfx UI '
+                              f'(first: slider{visible[0]}); prefix slider names with "-"')
     funcs = {}
     asts = {}
     case_variants = {}

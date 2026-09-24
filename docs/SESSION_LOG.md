@@ -55,7 +55,7 @@ pages and the REAPER 7.79 User Guide.
 ### Commits (branch `claude/reese-bass-plugin-fvsdw1`)
 - `4a1795a` Add Reese Basser (plugin, harness, tests, README, screenshot)
 - `e874771` Align with the JSFX programming reference
-- (this commit) project docs: CLAUDE.md, ADRs, session log, JSFX notes; preset count derived from the list
+- `41592e2` project docs: CLAUDE.md, ADRs, session log, JSFX notes; preset count derived from the list
 
 ### Open items / next steps
 - **Needs the owner to test in REAPER**: loading and compiling, the UI look (fonts differ from
@@ -66,3 +66,20 @@ pages and the REAPER 7.79 User Guide.
   `@serialize`; more engines (e.g. wavetable / resampled-loop); a keyboard/scale helper; exporting
   the renders to REAPER with `export_buffer_to_project`.
 - No PR has been opened (the owner hasn't asked for one).
+
+## Session 2 (2026-09-24): first REAPER test
+
+**Owner's report:** the plugin loads in REAPER (macOS, about 1.1% CPU while idle, no error), but the FX
+window shows only the list of sliders and fields, with no custom GUI.
+
+**Cause:** REAPER lays out visible sliders above the `@gfx` graphics area. With 100 visible
+sliders the list fills the window and the UI sits below it, out of view. The harness renders `@gfx`
+on its own, so it couldn't show this.
+
+**Fix:** every slider name is now prefixed with `-` (hidden but still automatable, per the
+JSFX reference). The transpiler errors if a plugin with `@gfx` has more than 8 visible sliders
+(verified: the previous commit is rejected). ADR-011 records the decision, and the README,
+CLAUDE.md and JSFX_NOTES are updated.
+
+**Still to confirm in REAPER:** the custom UI appears and fits the window; fonts and layout;
+knob/automation behaviour; CPU while playing.

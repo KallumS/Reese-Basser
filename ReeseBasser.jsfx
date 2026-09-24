@@ -7,122 +7,125 @@ tags:instrument synthesizer bass reese
 // Eight generation methods (engines), tempo-lockable beating, a Reese-focused
 // filter/drive section and a "mangle" rack for creative destruction.
 // Needs REAPER 6.74 or newer (more than 64 parameters + slider shapes).
+//
+// All sliders are hidden ("-" prefix) so REAPER shows the custom @gfx UI instead of a
+// 100-row slider list; they remain normal automatable parameters.
 
 in_pin:none
 out_pin:Left
 out_pin:Right
 
 // ---------------------------------------------------------------- ENGINE
-slider1:eng=0<0,7,1{Dual Saw (Classic),Supersaw Unison,PWM,Phase Distortion (CZ),FM Cross-Mod,Hard Sync,Phaser (Filter Reese),Cross-Fold}>Engine
-slider2:det=30<0,150,0.1>Detune (cents)
-slider3:detmode=0<0,2,1{Cents (tracks pitch),Hz (constant beat),Tempo Sync}>Detune Mode
-slider4:beathz=2<0.05,20,0.01:log>Beat Rate (Hz)
-slider5:beatdiv=9<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>Beat Sync
-slider6:enga=0<0,100,0.1>Engine A
-slider7:engb=45<0,100,0.1>Engine B
-slider8:engc=50<0,100,0.1>Engine C
-slider9:unison=1<1,8,1>Unison Voices
-slider10:uspread=25<0,100,0.1>Unison Spread
-slider11:spread=35<0,100,0.1>Stereo Spread
-slider12:drift=15<0,100,0.1>Analog Drift
-slider13:phasemode=0<0,2,1{Free Running,Reset,Random}>Osc Phase
-slider14:osclvl=0<-24,12,0.1>Osc Level (dB)
+slider1:eng=0<0,7,1{Dual Saw (Classic),Supersaw Unison,PWM,Phase Distortion (CZ),FM Cross-Mod,Hard Sync,Phaser (Filter Reese),Cross-Fold}>-Engine
+slider2:det=30<0,150,0.1>-Detune (cents)
+slider3:detmode=0<0,2,1{Cents (tracks pitch),Hz (constant beat),Tempo Sync}>-Detune Mode
+slider4:beathz=2<0.05,20,0.01:log>-Beat Rate (Hz)
+slider5:beatdiv=9<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>-Beat Sync
+slider6:enga=0<0,100,0.1>-Engine A
+slider7:engb=45<0,100,0.1>-Engine B
+slider8:engc=50<0,100,0.1>-Engine C
+slider9:unison=1<1,8,1>-Unison Voices
+slider10:uspread=25<0,100,0.1>-Unison Spread
+slider11:spread=35<0,100,0.1>-Stereo Spread
+slider12:drift=15<0,100,0.1>-Analog Drift
+slider13:phasemode=0<0,2,1{Free Running,Reset,Random}>-Osc Phase
+slider14:osclvl=0<-24,12,0.1>-Osc Level (dB)
 // ---------------------------------------------------------------- SUB / NOISE
-slider15:sublvl=0<0,100,0.1>Sub Level
-slider16:subwave=0<0,3,1{Sine,Triangle,Square,Saw}>Sub Wave
-slider17:suboct=1<0,2,1{0,-1,-2}>Sub Octave
-slider18:noiselvl=0<0,100,0.1>Noise Level
-slider19:ncolor=50<0,100,0.1>Noise Color
-slider20:lowcut=0<0,500,1:sqr>Reese Low Cut (Hz)
+slider15:sublvl=0<0,100,0.1>-Sub Level
+slider16:subwave=0<0,3,1{Sine,Triangle,Square,Saw}>-Sub Wave
+slider17:suboct=1<0,2,1{0,-1,-2}>-Sub Octave
+slider18:noiselvl=0<0,100,0.1>-Noise Level
+slider19:ncolor=50<0,100,0.1>-Noise Color
+slider20:lowcut=0<0,500,1:sqr>-Reese Low Cut (Hz)
 // ---------------------------------------------------------------- FILTER
-slider21:ftype=0<0,5,1{LP 24 Ladder,LP 12,Band Pass,High Pass,Notch,Off}>Filter Type
-slider22:cutoff=650<20,20000,1:log>Cutoff (Hz)
-slider23:reso=14<0,100,0.1>Resonance
-slider24:fdrive=0<0,100,0.1>Filter Drive
-slider25:fkey=40<0,100,0.1>Key Track
-slider26:fenv=0<-100,100,0.1>Filter Env Amount
+slider21:ftype=0<0,5,1{LP 24 Ladder,LP 12,Band Pass,High Pass,Notch,Off}>-Filter Type
+slider22:cutoff=650<20,20000,1:log>-Cutoff (Hz)
+slider23:reso=14<0,100,0.1>-Resonance
+slider24:fdrive=0<0,100,0.1>-Filter Drive
+slider25:fkey=40<0,100,0.1>-Key Track
+slider26:fenv=0<-100,100,0.1>-Filter Env Amount
 // ---------------------------------------------------------------- ENVELOPES
-slider27:aatt=4<0.5,5000,0.1:log>Amp Attack (ms)
-slider28:adec=300<1,10000,0.1:log>Amp Decay (ms)
-slider29:asus=100<0,100,0.1>Amp Sustain
-slider30:arel=120<1,10000,0.1:log>Amp Release (ms)
-slider31:matt=1<0.5,5000,0.1:log>Mod Attack (ms)
-slider32:mdec=400<1,10000,0.1:log>Mod Decay (ms)
-slider33:msus=0<0,100,0.1>Mod Sustain
-slider34:mrel=200<1,10000,0.1:log>Mod Release (ms)
+slider27:aatt=4<0.5,5000,0.1:log>-Amp Attack (ms)
+slider28:adec=300<1,10000,0.1:log>-Amp Decay (ms)
+slider29:asus=100<0,100,0.1>-Amp Sustain
+slider30:arel=120<1,10000,0.1:log>-Amp Release (ms)
+slider31:matt=1<0.5,5000,0.1:log>-Mod Attack (ms)
+slider32:mdec=400<1,10000,0.1:log>-Mod Decay (ms)
+slider33:msus=0<0,100,0.1>-Mod Sustain
+slider34:mrel=200<1,10000,0.1:log>-Mod Release (ms)
 // ---------------------------------------------------------------- LFOs
-slider35:l1shape=1<0,6,1{Sine,Triangle,Saw Up,Saw Down,Square,Sample & Hold,Smooth Random}>LFO1 Shape
-slider36:l1sync=1<0,1,1{Hz,Tempo}>LFO1 Sync
-slider37:l1rate=1<0.01,40,0.01:log>LFO1 Rate (Hz)
-slider38:l1div=9<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>LFO1 Division
-slider39:l1trig=0<0,1,1{Free,Retrigger}>LFO1 Trigger
-slider40:l1fade=0<0,5000,1:sqr>LFO1 Fade In (ms)
-slider41:l2shape=0<0,6,1{Sine,Triangle,Saw Up,Saw Down,Square,Sample & Hold,Smooth Random}>LFO2 Shape
-slider42:l2sync=0<0,1,1{Hz,Tempo}>LFO2 Sync
-slider43:l2rate=0.3<0.01,40,0.01:log>LFO2 Rate (Hz)
-slider44:l2div=6<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>LFO2 Division
-slider45:l2trig=0<0,1,1{Free,Retrigger}>LFO2 Trigger
-slider46:l2fade=0<0,5000,1:sqr>LFO2 Fade In (ms)
+slider35:l1shape=1<0,6,1{Sine,Triangle,Saw Up,Saw Down,Square,Sample & Hold,Smooth Random}>-LFO1 Shape
+slider36:l1sync=1<0,1,1{Hz,Tempo}>-LFO1 Sync
+slider37:l1rate=1<0.01,40,0.01:log>-LFO1 Rate (Hz)
+slider38:l1div=9<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>-LFO1 Division
+slider39:l1trig=0<0,1,1{Free,Retrigger}>-LFO1 Trigger
+slider40:l1fade=0<0,5000,1:sqr>-LFO1 Fade In (ms)
+slider41:l2shape=0<0,6,1{Sine,Triangle,Saw Up,Saw Down,Square,Sample & Hold,Smooth Random}>-LFO2 Shape
+slider42:l2sync=0<0,1,1{Hz,Tempo}>-LFO2 Sync
+slider43:l2rate=0.3<0.01,40,0.01:log>-LFO2 Rate (Hz)
+slider44:l2div=6<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>-LFO2 Division
+slider45:l2trig=0<0,1,1{Free,Retrigger}>-LFO2 Trigger
+slider46:l2fade=0<0,5000,1:sqr>-LFO2 Fade In (ms)
 // ---------------------------------------------------------------- DISTORTION
-slider47:dtype=0<0,5,1{Tape,Tube,Hard Clip,Wavefold,Rectify,Pedal OD}>Distortion Type
-slider48:ddrive=0<0,100,0.1>Distortion Drive
-slider49:dtone=100<0,100,0.1>Distortion Tone
-slider50:dmix=100<0,100,0.1>Distortion Mix
-slider51:dpos=0<0,1,1{Post Filter,Pre Filter}>Distortion Position
+slider47:dtype=0<0,5,1{Tape,Tube,Hard Clip,Wavefold,Rectify,Pedal OD}>-Distortion Type
+slider48:ddrive=0<0,100,0.1>-Distortion Drive
+slider49:dtone=100<0,100,0.1>-Distortion Tone
+slider50:dmix=100<0,100,0.1>-Distortion Mix
+slider51:dpos=0<0,1,1{Post Filter,Pre Filter}>-Distortion Position
 // ---------------------------------------------------------------- MOVEMENT
-slider52:mvtype=0<0,3,1{Off,Notch Sweep,Phaser,Flanger}>Movement Type
-slider53:mvfreq=600<20,10000,1:log>Movement Freq (Hz)
-slider54:mvdepth=50<0,100,0.1>Movement Depth
-slider55:mvrate=6<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>Movement Rate
-slider56:mvreso=40<0,100,0.1>Movement Resonance
-slider57:mvstereo=25<0,100,0.1>Movement Stereo
-slider58:mvmix=100<0,100,0.1>Movement Mix
+slider52:mvtype=0<0,3,1{Off,Notch Sweep,Phaser,Flanger}>-Movement Type
+slider53:mvfreq=600<20,10000,1:log>-Movement Freq (Hz)
+slider54:mvdepth=50<0,100,0.1>-Movement Depth
+slider55:mvrate=6<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>-Movement Rate
+slider56:mvreso=40<0,100,0.1>-Movement Resonance
+slider57:mvstereo=25<0,100,0.1>-Movement Stereo
+slider58:mvmix=100<0,100,0.1>-Movement Mix
 // ---------------------------------------------------------------- MANGLE
-slider59:vowel=0<0,100,0.1>Formant Vowel
-slider60:fmix=0<0,100,0.1>Formant Mix
-slider61:fshift=0<-1000,1000,0.1>Freq Shift (Hz)
-slider62:shmix=0<0,100,0.1>Freq Shift Mix
-slider63:ring=1<0.25,8,0.001:log>Ring Mod Ratio
-slider64:ringmix=0<0,100,0.1>Ring Mod Mix
-slider65:bits=16<1,16,0.1>Crush Bits
-slider66:downs=1<1,50,0.01:log>Downsample
-slider67:cmix=100<0,100,0.1>Crush Mix
-slider68:squash=0<0,100,0.1>Squash (multiband)
+slider59:vowel=0<0,100,0.1>-Formant Vowel
+slider60:fmix=0<0,100,0.1>-Formant Mix
+slider61:fshift=0<-1000,1000,0.1>-Freq Shift (Hz)
+slider62:shmix=0<0,100,0.1>-Freq Shift Mix
+slider63:ring=1<0.25,8,0.001:log>-Ring Mod Ratio
+slider64:ringmix=0<0,100,0.1>-Ring Mod Mix
+slider65:bits=16<1,16,0.1>-Crush Bits
+slider66:downs=1<1,50,0.01:log>-Downsample
+slider67:cmix=100<0,100,0.1>-Crush Mix
+slider68:squash=0<0,100,0.1>-Squash (multiband)
 // ---------------------------------------------------------------- STEREO
-slider69:chmix=0<0,100,0.1>Chorus Mix
-slider70:chrate=0.4<0.05,5,0.01:log>Chorus Rate (Hz)
-slider71:chdepth=50<0,100,0.1>Chorus Depth
-slider72:width=100<0,200,0.1>Width
-slider73:monobass=120<0,400,1>Mono Bass Below (Hz)
+slider69:chmix=0<0,100,0.1>-Chorus Mix
+slider70:chrate=0.4<0.05,5,0.01:log>-Chorus Rate (Hz)
+slider71:chdepth=50<0,100,0.1>-Chorus Depth
+slider72:width=100<0,200,0.1>-Width
+slider73:monobass=120<0,400,1>-Mono Bass Below (Hz)
 // ---------------------------------------------------------------- GLOBAL
-slider74:vmode=0<0,1,1{Legato,Retrigger}>Note Mode
-slider75:glide=80<0,2000,0.1:sqr>Glide (ms)
-slider76:glidemode=0<0,1,1{Legato Only,Always}>Glide Mode
-slider77:bendr=2<0,24,1>Pitch Bend Range
-slider78:velsens=40<0,100,0.1>Velocity Sensitivity
-slider79:octave=0<-3,2,1>Octave
-slider80:quality=1<0,2,1{1x (Eco),2x,4x (Best)}>Oversampling
-slider81:volume=-6<-48,12,0.1>Output (dB)
-slider82:limiter=1<0,1,1{Off,Soft Clip}>Output Clipper
+slider74:vmode=0<0,1,1{Legato,Retrigger}>-Note Mode
+slider75:glide=80<0,2000,0.1:sqr>-Glide (ms)
+slider76:glidemode=0<0,1,1{Legato Only,Always}>-Glide Mode
+slider77:bendr=2<0,24,1>-Pitch Bend Range
+slider78:velsens=40<0,100,0.1>-Velocity Sensitivity
+slider79:octave=0<-3,2,1>-Octave
+slider80:quality=1<0,2,1{1x (Eco),2x,4x (Best)}>-Oversampling
+slider81:volume=-6<-48,12,0.1>-Output (dB)
+slider82:limiter=1<0,1,1{Off,Soft Clip}>-Output Clipper
 // ---------------------------------------------------------------- MOD MATRIX
-slider83:m1src=1<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>Mod 1 Source
-slider84:m1dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>Mod 1 Destination
-slider85:m1amt=0<-100,100,0.1>Mod 1 Amount
-slider86:m2src=3<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>Mod 2 Source
-slider87:m2dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>Mod 2 Destination
-slider88:m2amt=0<-100,100,0.1>Mod 2 Amount
-slider89:m3src=6<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>Mod 3 Source
-slider90:m3dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>Mod 3 Destination
-slider91:m3amt=0<-100,100,0.1>Mod 3 Amount
-slider92:m4src=2<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>Mod 4 Source
-slider93:m4dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>Mod 4 Destination
-slider94:m4amt=0<-100,100,0.1>Mod 4 Amount
-slider95:m5src=5<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>Mod 5 Source
-slider96:m5dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>Mod 5 Destination
-slider97:m5amt=0<-100,100,0.1>Mod 5 Amount
-slider98:m6src=10<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>Mod 6 Source
-slider99:m6dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>Mod 6 Destination
-slider100:m6amt=0<-100,100,0.1>Mod 6 Amount
+slider83:m1src=1<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>-Mod 1 Source
+slider84:m1dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>-Mod 1 Destination
+slider85:m1amt=0<-100,100,0.1>-Mod 1 Amount
+slider86:m2src=3<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>-Mod 2 Source
+slider87:m2dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>-Mod 2 Destination
+slider88:m2amt=0<-100,100,0.1>-Mod 2 Amount
+slider89:m3src=6<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>-Mod 3 Source
+slider90:m3dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>-Mod 3 Destination
+slider91:m3amt=0<-100,100,0.1>-Mod 3 Amount
+slider92:m4src=2<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>-Mod 4 Source
+slider93:m4dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>-Mod 4 Destination
+slider94:m4amt=0<-100,100,0.1>-Mod 4 Amount
+slider95:m5src=5<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>-Mod 5 Source
+slider96:m5dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>-Mod 5 Destination
+slider97:m5amt=0<-100,100,0.1>-Mod 5 Amount
+slider98:m6src=10<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>-Mod 6 Source
+slider99:m6dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>-Mod 6 Destination
+slider100:m6amt=0<-100,100,0.1>-Mod 6 Amount
 
 @init
 ext_noinit = 1;

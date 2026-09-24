@@ -27,7 +27,7 @@ that share one control surface: DETUNE + three engine-specific controls A/B/C (l
 formatting and UI defaults change per engine) + unison/spread/drift.
 **Consequences:** One voice keeps CPU low and allows expensive per-voice processing (oversampling,
 Hilbert shifter, multiband). No polyphony, which is intentional for a Reese specialist. Slider names
-for A/B/C are generic ("Engine A") in REAPER's generic UI.
+for A/B/C are generic ("Engine A") in automation lists.
 
 ## ADR-003: Detune modes built around the beat (Cents / Hz / Tempo Sync)
 
@@ -81,7 +81,8 @@ in REAPER (unmeasured; see the session log's open items).
 in the same call. Parameters are edited through `p_set()` (records automation) and presets/mutate
 use `p_put()` (only `sliderchange`). UI edits set `ui_dirty`, and `@block` runs `update_params()`
 because `@slider` does not fire for code-side changes. Every parameter stays a real slider, so
-REAPER's generic UI, automation, parameter modulation and MIDI learn all work.
+automation, parameter modulation and MIDI learn all work (see ADR-011 for why the sliders
+are hidden from the plain slider view).
 **Consequences:** Host notifications use the documented `sliderX` form through a generated
 100-way dispatch (`notify()`/`automate()`), not bit masks. The layout is fixed-proportion, so the
 TCP-embedded view is tiny.
@@ -109,3 +110,16 @@ Patch" after reload). Adding a preset means appending its name to `PRESETS` and 
 **Decision:** Slider indices 1–100 are frozen. New parameters go at 101+ (the limit is 256). Enum
 item order is also frozen; append new items at the end.
 **Consequences:** Saved projects, automation and user presets stay valid across versions.
+
+## ADR-011: Hide every slider from the plain slider view
+
+**Status:** accepted (session 2)
+**Context:** First test in REAPER (macOS, 7.x): the FX window showed only the slider list and
+no custom UI. REAPER draws visible sliders **above** the `@gfx` area, and 100 rows push the
+graphics out of the window.
+**Decision:** Prefix every slider name with `-` (documented: hidden from the plug-in UI but
+still active and automatable). The custom UI is the only in-window editor. The transpiler now
+refuses a plugin with `@gfx` and more than 8 visible sliders, so this can't come back.
+**Consequences:** No generic-slider fallback inside the plugin window. Parameters stay reachable
+through automation envelopes, the Param button, parameter modulation and MIDI learn. If a future
+version wants a few visible sliders (e.g. a compact mode), keep the count small.

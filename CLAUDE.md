@@ -4,6 +4,9 @@ A REAPER instrument that only makes Reese basses. It is a single JSFX file
 (`ReeseBasser.jsfx`, EEL2 language). The owner's DAW is REAPER; the target is
 **REAPER 6.74+** (100 parameters, slider shaping, `tags:instrument`).
 
+**Status:** v1.1 is owner-tested and working in REAPER (macOS): a paged UI (SYNTH / MODULATION /
+FX + MANGLE), 8 engines, 20 presets. See "Current status" at the end of `docs/SESSION_LOG.md`.
+
 Read first: `docs/JSFX_NOTES.md` (verified language/API facts; they have already
 caused real bugs), `docs/DECISIONS.md` (why things are the way they are),
 `docs/SESSION_LOG.md` (history and open items).
@@ -13,7 +16,7 @@ caused real bugs), `docs/DECISIONS.md` (why things are the way they are),
 ```
 ReeseBasser.jsfx          the plugin (DSP + custom UI + presets), ~2000 lines
 README.md                 user manual (install, engines, controls, presets, recipes)
-docs/                     screenshot.png, JSFX_NOTES.md, DECISIONS.md, SESSION_LOG.md
+docs/                     screenshot*.png (3 pages), JSFX_NOTES.md, DECISIONS.md, SESSION_LOG.md
 tools/jsfx2c/jsfx2c.py    JSFX/EEL2 -> C transpiler (strict; follows the JSFX reference)
 tools/jsfx2c/runtime.c|h  C runtime + driver: renders audio, logs @gfx draw calls
 tools/jsfx2c/render_gfx.py  gfx log -> PNG (Liberation Sans = Arial metrics)

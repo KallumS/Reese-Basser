@@ -73,7 +73,7 @@ hot filters (the decimators went from memory to unrolled code, about 3× faster)
 active mod-slot list. Skip the voice core entirely when the amp envelope is idle, and clear its
 states then.
 **Consequences:** About 30–50× realtime in the C harness at 2x. Expect roughly 5–10% of one core
-in REAPER (unmeasured; see the session log's open items).
+in REAPER. The owner reports v1.1 running well in REAPER (session 2); no exact figure yet.
 
 ## ADR-007: The custom UI is immediate-mode on a scaled logical canvas
 

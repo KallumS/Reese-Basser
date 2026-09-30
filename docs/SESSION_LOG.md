@@ -101,5 +101,23 @@ in the tab bar. Test/demo scripts use the new preset-box coordinates, and a UI t
 (tabs, a knob drag on the FX page, a mod-matrix dropdown). Screenshots for all three pages are in docs/.
 Version bumped to 1.1.
 
-**Still to confirm in REAPER:** that the flicker is gone, the text size on the new pages, and CPU while playing.
+**Result:** the owner tested v1.1 in REAPER and reports it all working well: the pages
+display, the mod matrix no longer flickers and the text is readable. No exact CPU figure was reported.
+Docs updated and a carry-over prompt written for the next session.
+
+---
+
+## Current status (end of session 2)
+
+- **v1.1 works in REAPER** (macOS, owner-tested): it loads under Instruments, the custom paged UI
+  shows, and the sound and presets work. Branch `claude/reese-bass-plugin-fvsdw1`; no PR opened.
+- The harness suite (`tools/test_render.py`) passes: all engines × oversampling, FX, 20 presets,
+  beat-rate measurements, stale-srate @init, UI page test.
+- **Open / unverified:** automation *recording* from the custom UI (`slider_automate(sliderX, end_touch)`)
+  hasn't been specifically tested; exact CPU while playing is not measured.
+- **Idea backlog** (none requested yet): compact embedded TCP/MCP view (`gfx_ext_flags & 1`);
+  `slider_next_chg()` sample-accurate automation; save the current page and preset name via
+  `@serialize`/hidden sliders; `options:gfx_hz=60`; more engines (wavetable, resampled loop);
+  more presets; keyboard shortcuts for the pages; `export_buffer_to_project` to bounce a Reese
+  straight into the project.
 

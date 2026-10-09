@@ -241,4 +241,4 @@ Noise Engineering (audio-rate modulated processors).
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+GNU General Public License v3 - see [LICENSE](LICENSE).

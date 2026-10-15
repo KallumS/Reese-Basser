@@ -196,6 +196,17 @@ def hig_tests(exe, out):
                        inside and one and rings[want] == rings[0])
         notacc = not any(ui_checks.other_rings(l) for l in logs)
         fails += check(f'page {page}: the ring is near-white #F2F4F7, never an accent', notacc)
+        # not colour alone: each switch has one bar under its chosen segment, the chosen tab a thick one
+        rects = [tuple(map(float, l.split()[1:5])) for l in logs[0] if l.startswith('rect ')]
+        bars = []
+        for fid, kind, x, y, w, h in focus:
+            if kind == 3:
+                bars.append(sum(1 for rx, ry, rw, rh in rects
+                                if rh == 3 and ry == y + h - 4 and x <= rx and rx + rw <= x + w))
+            if kind == 6 and fid == 300 + page:
+                bars.append(sum(1 for rx, ry, rw, rh in rects if rh == 4 and ry == y + h - 4 and rx == x))
+        fails += check(f'page {page}: the chosen segment of every switch and the chosen tab carry a bar',
+                       bars and all(b == 1 for b in bars), str(bars))
         short = [f for f in focus if f[5] < 28]
         fails += check(f'page {page}: every control at least 28 tall', not short, str(short[:4]))
         close = ui_checks.spacing(focus)
@@ -251,6 +262,7 @@ def hig_tests(exe, out):
                    len(r) == 1 and r[0][0] >= 0 and r[0][1] >= 0 and r[0][2] <= 960 and r[0][3] <= 684, str(r))
     for label, body, size, env, want_font, want_bars in (
             ('Retina 2x at 100%: twice the size, no scroll bars', ['retina 2'], (1920, 1368), None, 54, 0),
+            ('Retina 2x in a smaller window: still twice the size, scrolls', ['retina 2'], (1440, 1026), None, 54, 2),
             ('100% in a small window keeps its size and scrolls', [], (700, 500), None, 27, 2),
             ('Fit to Window shrinks to fit, no scroll bars', ['slider 101 4'], (480, 342), None, 13.5, 0),
             ('embedded in a track panel: fits, no scroll bars', ['extflags 1'], (480, 342), None, 13.5, 0)):

@@ -145,3 +145,73 @@ nothing about the sound, the layout or the sliders' numbers, order and ranges ch
 
 Verified: `tools/test_render.py` FAILURES: 0; all three pages rendered and looked at, nothing
 clipped; the preset box shows "Saunderson ’88 (CZ)"; the menus read as above.
+
+
+## Session 4 (2026-10-15): the rest of Apple's HIG Foundations (v1.2)
+
+The user asked for the window to meet Apple's HIG "Foundations" in full, as Transient Shuffler
+does (ADR-015, `docs/apple-hig-review.md`). Nothing about the sound changed; no slider was
+renumbered (two new ones, 101 and 102, are window preferences).
+
+**First, measure.** A checker (`tools/ui_checks.py`) was written to replay the harness's drawing
+log and measure every string against what is drawn under it. Run on 1.1.1 it found 34 strings
+under 7:1 on the Synth page alone: every caption and hint at 4.7:1, the footer 4.3:1, white on the
+chosen switches 4.8–5.3:1, and the beat reading over the bright beat bar down to 2.1:1 (it
+depends on the moment: the bar pulses, so the tests look at four moments). On the other pages
+the blue, pink and purple titles were 5.7–6.6:1, the mod-amount reading 3.4:1, the mod matrix's
+slot numbers 3.9:1.
+
+**What changed, in a musician's terms:**
+- Every word in the window is now easy to read: the grey captions are lighter, the coloured
+  section titles are a lighter tint of their colour, the chosen switch segments are darker, and
+  the beat reading sits on its own dark plate.
+- **Options** (top right): Interface Size 100/125/150/200% or Fit to Window, and Reduce Motion,
+  which holds the beat bar still. The window still grows when you make it bigger; made smaller
+  than the chosen size it scrolls instead of shrinking the text.
+- The whole window works from the keyboard: Tab, Shift+Tab, Return/Space, the arrows (Shift for
+  finer), Delete to reset, Esc. A white ring shows where you are, and the line under the title
+  says what it is and its value.
+- The help line and readout moved from the bottom edge to under the title; the version is in
+  the Options menu. Buttons, menus and switches are 28 tall with room between them; a chosen
+  switch or tab also has a bar under it.
+- The text is in the system's font (San Francisco, Segoe UI), else Arial.
+
+**The harness** gained what the new code needs, each written from the JSFX reference's
+description as carried in Transient Shuffler: multi-character key constants (`'rght'`),
+`gfx_getfont` (with `JSFX_FONTS` standing for the faces a system has), `match`/`matchi`
+(wildcards), `gfx_ext_flags`, and script commands `key`, `retina`, `extflags`, `dumpmem`,
+`logframe <path>`. `render_gfx.py` became a reusable `replay()` (its PNGs are byte-identical).
+
+**Tests** (`tools/test_render.py`, "HIG" sections): contrast and fit of 3,705 strings in 38 frames
+(all pages, four beat moments, hovered and focused states, every engine, movement, detune and
+phase mode); nothing under 10 px; nothing below y 664; the Tab order on each page (40, 45 and 35
+controls, counted off the screen), one ring per press, wrapping; ring colour; heights ≥ 28;
+spacing ≥ 12; the bar on every chosen switch and tab; Shift+Tab, Return, Space, arrows, Delete,
+Esc, a click; interface size from the menu, 200% with scroll bars and the focus scrolled into
+view, Retina (sharp, and in a smaller window), a small window, Fit to Window, the embedded view,
+the wheel; the font with each face present or missing; Reduce Motion on and off, and remembered.
+
+**Proving they bite.** 27 sabotages, each applied to a copy of the plug-in, never the working
+tree (the batch script is in the session scratchpad), running only the HIG checks. 25 bit at
+once. Two did not:
+- *Grey text on a hovered tab*: it measures 7.05:1, so it was not a violation — an estimate of
+  6.5 by hand was wrong. Paired with a lighter hover fill (5.8:1) it bites.
+- *Retina ignored*: a real gap. The only Retina case was a window exactly twice the canvas, where
+  fitting gives the same answer. A Retina window smaller than that must now still draw at 2x
+  and scroll; with that case added it bites.
+
+**Looked at**: all three pages at 100%, a focus ring on a switch, 200% scrolled to a focused
+knob, and a Retina-sized render. The README screenshots were re-rendered.
+
+**Not verified, only REAPER can say** (ADR-015): which keys REAPER passes to the window without
+"Send all keyboard input to plug-in"; whether `gfx_getfont` names the real face on macOS; the
+sideways wheel; how 125% and 150% look with REAPER's own font rasteriser; whether Esc is the
+window's or REAPER's. Note that 1.1 already called `gfx_getchar()` every frame, so key handling
+by REAPER is no different from what the user has already run.
+
+## Current status (end of session 4)
+
+- **v1.2 on `ccr-f2d9adc9-lanc9o`** (with 1.1.1), not yet run in REAPER. `tools/test_render.py`
+  passes (FAILURES: 0).
+- Ask the user, when they try it: does Tab move the white ring, do the arrows turn a knob, does
+  the text look like their system's font, and does Options → Interface Size behave as described.

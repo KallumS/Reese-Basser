@@ -114,3 +114,22 @@ Where a behaviour has already caused a bug, it is marked ⚠.
 - `gfx_showmenu` reads `&` as a mnemonic marker; `build_menu` doubles it so "Sample & Hold" shows.
 - The transpiler writes string literals byte by byte with octal escapes: a C hex escape swallows
   the digits after it, so "’88" lost its 88 in the harness until it did.
+
+## Keyboard, fonts and scale (session 4, ADR-015)
+Not checked against the JSFX reference this session (it was not to hand); these follow the
+calls Transient Shuffler uses, which were checked against WDL's `eel_lice.h`. Each is marked.
+- `gfx_getchar()` returns one queued key per call, 0 when none: Tab 9, Return 13, Esc 27, Space 32,
+  Backspace 8, and named keys as multi-character constants: `'up'`, `'down'`, `'left'`, `'rght'`,
+  `'del'`. EEL2 reads `'rght'` as its bytes, big-endian (the transpiler does the same). Shift is
+  `mouse_cap & 8`. **Unverified in REAPER**: which keys reach the window without "Send all keyboard
+  input to plug-in" (`options:want_all_kb` would turn it on; deliberately not used).
+- `gfx_getfont(#str)` returns the current font index and puts the face actually used in `#str`.
+  **Unverified**: whether macOS gives back the real face or echoes the name asked for (so
+  `pick_font` tries `.AppleSystemUIFont` first).
+- `matchi(pattern, str)`: case-insensitive wildcard match (`*`, `?`, `+`; `%` formats exist too).
+  The harness supports the wildcards only.
+- `gfx_ext_retina`: set to 1 in @init to ask for HiDPI; REAPER then sets it to 2 on a Retina
+  screen (`gfx_w/h` in pixels). `gfx_ext_flags & 1`: the UI is embedded in the TCP/MCP.
+- `mouse_hwheel`: sideways scrolling, like `mouse_wheel` (±120 a notch, reset by the script).
+  **Unverified in REAPER**.
+- A JSFX cannot change its window's size: `@gfx w h` is only the size it asks for.

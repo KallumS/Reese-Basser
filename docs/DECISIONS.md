@@ -170,3 +170,70 @@ DET, Retrig) stay.
 their words changed. Loops over strings stop on `!= 0`, because `str_getchar` is signed and the
 first byte of "—" reads below 0; the harness's `str_getchar` is signed now too, so it would catch
 that. Popup menus double `&`. New text follows the same rules; render the pages to check it fits.
+
+## ADR-015: The window follows the rest of Apple's HIG Foundations
+
+**Status:** accepted (session 4, 2026-10-15). **Not yet run in REAPER.**
+**Context:** After the wording (ADR-014) the user asked for the rest of Apple's Human Interface
+Guidelines "Foundations" — the standard their plug-in Transient Shuffler already meets (its
+decision 0010), and the ReaImGui family's (Midi Suggester 0009 and the rest). Checked against
+the 19 Foundations pages (`docs/apple-hig-review.md`), the window fell short (measured by the
+new checker on 1.1.1): secondary text 4.7:1, the mod matrix's slot numbers 3.9:1, the footer
+4.3:1, section titles in blue, pink or purple 5.7–6.6:1 on their panels, white on a chosen
+switch 4.8–7.0:1, the mod amount over its fill 3.4:1, the beat reading over the bright beat bar
+down to 2.1:1; the help line at the bottom edge;
+no keyboard use at all; Arial everywhere; switches 22–24 tall and some controls 2–8 apart; a
+chosen tab or switch told apart by colour alone.
+**Decision:**
+- **Contrast.** Every line of text at least **7:1** on what it sits on (Apple's target for small
+  text; its floor is 4.5:1). Secondary text `#B0B6C0` (`c_sec`). The accents stay, but
+  `accent()` also makes a **text tint** of each, lightened toward white until it reads 7.2:1 on a
+  panel, for titles and values. Chosen switches and tabs are filled with the accent at 35%
+  (was 55% and 45%); the mod-amount bar's fill is dim with a bright edge; the beat reading sits
+  on a dark plate. Disabled labels (`c_dis`) are exempt, as Apple allows.
+- **Interface size**, Options → 100/125/150/200%. The canvas already grew with the window, so
+  the size is the **smallest it may be drawn** (times `gfx_ext_retina`): larger windows still
+  scale it up, a smaller window scrolls (scroll bars, the wheel over a gap, the keyboard focus
+  scrolled into view) instead of shrinking the text below its size. **Fit Interface to Window**
+  keeps the old always-shrink behaviour for small dockers, and the view embedded in a track
+  panel (`gfx_ext_flags & 1`) always fits. A JSFX cannot set its own window size, so "a size
+  that sets the window" was not possible.
+- **Remembered as hidden sliders 101 and 102** (*Interface Size*, *Reduce Motion*), appended per
+  ADR-010. Sliders, not `@serialize`: the plugin has no `@serialize` (adding one changes when
+  memory is cleared), sliders are what the harness models, and a screen reader can reach them.
+  The cost: they are per instance, saved in REAPER presets, and listed among the parameters.
+  The built-in presets and Mutate only touch 1–100.
+- **System font**: `pick_font()` asks for `.AppleSystemUIFont`, then `Segoe UI`, and reads back
+  what `gfx_getfont` gave; anything else is Arial. The Mac face is tried first because a system
+  without it hands back a substitute either way, while a Mac might echo a name it does not have.
+  Sizes unchanged (11–13 px logical, 27 for the name), so nothing under 10 at 100%.
+- **Controls**: buttons, menus, switches, bars and tabs **28 tall, at least 12 apart**. Knobs are
+  their own shape — a 38 px dial, hit area 56 × 72, 12 or more apart — so they keep their size.
+- **The keyboard alone**: every control registers in a focus list as it is drawn, so Tab and
+  Shift+Tab follow reading order (header, tabs, then panel by panel). A near-white ring
+  (`#F2F4F7`, never an accent) marks the focus; Return/Space press or open; arrows nudge (Shift
+  finer) or step; Delete/Backspace reset (the keyboard's double-click); Esc or a click lets go.
+  The help line names the focused control and its value. `want_all_kb` stays off: this is a
+  played instrument and REAPER's shortcuts must keep working.
+- **Not colour alone**: the chosen segment of a switch carries a bar along its foot; the chosen
+  tab a thick bar where the others have a hairline.
+- **Nothing at the bottom**: the footer's help line and readout moved to a second header row
+  (pages drawn 10 lower); the version moved into the Options menu.
+- **Reduce Motion** (Options) holds the pulsing beat bar still. The scopes are left moving: they
+  show the sound, which is information, not decoration. No messages are time-boxed (there are
+  none on a timer).
+**Consequences:**
+- New code: every size in logical units through `ui_s` (the primitives `RF`/`TX`/... do this);
+  every control calls `focusable()` and draws `focus_ring()`; every text colour is `c_text`,
+  `c_sec`, an accent's tint or measured at 7:1; controls 28 tall and 12 apart. The suite checks
+  each of these on every page (`tools/ui_checks.py`).
+- **Not met, because a JSFX can't**: VoiceOver, Voice Control and Switch Control cannot read a
+  window a JSFX draws itself — every setting is a REAPER parameter, reachable through the FX
+  parameter list (with OSARA, for example). A JSFX cannot read Dynamic Type, Increase Contrast or
+  the system's Reduce Motion setting, so Interface Size and the plugin's own Reduce Motion stand
+  in. It cannot be translated or mirrored for right-to-left languages.
+- **Unverified in REAPER**: whether REAPER passes Tab, the arrows, Return, Space and Esc to the
+  window without "Send all keyboard input to plug-in"; whether `gfx_getfont` names the face the
+  system really gave (on macOS especially); `mouse_hwheel` for sideways scrolling; how the
+  canvas looks at 125%/150% with REAPER's font rasteriser. The harness measures text with
+  Liberation Sans (Arial's metrics) plus 8% for wider system fonts.

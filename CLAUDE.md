@@ -61,6 +61,9 @@ so **run the test suite before every push**, and render a UI PNG after any `@gfx
   (use `ui_*` names). The transpiler enforces this (`ui_dirty` is the one allowed shared flag).
 - Every slider name starts with `-` (hidden). REAPER puts visible sliders above the `@gfx` area,
   so 100 visible sliders hid the whole UI in REAPER (ADR-011). New sliders must be hidden too.
+- **Text follows Apple's writing guidelines** (ADR-014): title-style names, menus and slider
+  names; sentence-case captions and hints; em dashes, curly quotes. `str_getchar` is signed, so loop
+  over a string to `!= 0`; `build_menu` doubles `&` for `gfx_showmenu`. Render the pages after.
 - Memory index = `floor(v + 0.00001)`; `%` works on absolute integer values; `x == y` means |x−y| < 1e-5.
 
 ## Code map (search for these banners)

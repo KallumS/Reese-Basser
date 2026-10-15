@@ -1,7 +1,7 @@
-desc:Reese Basser - Reese bass synthesizer
+desc:Reese Basser — Reese Bass Synthesizer
 tags:instrument synthesizer bass reese
 //author: Reese Basser
-//version: 1.1
+//version: 1.1.1
 //
 // A monophonic synthesizer that only makes Reese basses, but makes them well.
 // Eight generation methods (engines), tempo-lockable beating, a Reese-focused
@@ -18,7 +18,7 @@ out_pin:Right
 // ---------------------------------------------------------------- ENGINE
 slider1:eng=0<0,7,1{Dual Saw (Classic),Supersaw Unison,PWM,Phase Distortion (CZ),FM Cross-Mod,Hard Sync,Phaser (Filter Reese),Cross-Fold}>-Engine
 slider2:det=30<0,150,0.1>-Detune (cents)
-slider3:detmode=0<0,2,1{Cents (tracks pitch),Hz (constant beat),Tempo Sync}>-Detune Mode
+slider3:detmode=0<0,2,1{Cents (Tracks Pitch),Hz (Constant Beat),Tempo Sync}>-Detune Mode
 slider4:beathz=2<0.05,20,0.01:log>-Beat Rate (Hz)
 slider5:beatdiv=9<0,14,1{4 Bars,2 Bars,1/1,1/2,1/2T,1/4D,1/4,1/4T,1/8D,1/8,1/8T,1/16D,1/16,1/16T,1/32}>-Beat Sync
 slider6:enga=0<0,100,0.1>-Engine A
@@ -90,7 +90,7 @@ slider64:ringmix=0<0,100,0.1>-Ring Mod Mix
 slider65:bits=16<1,16,0.1>-Crush Bits
 slider66:downs=1<1,50,0.01:log>-Downsample
 slider67:cmix=100<0,100,0.1>-Crush Mix
-slider68:squash=0<0,100,0.1>-Squash (multiband)
+slider68:squash=0<0,100,0.1>-Squash (Multiband)
 // ---------------------------------------------------------------- STEREO
 slider69:chmix=0<0,100,0.1>-Chorus Mix
 slider70:chrate=0.4<0.05,5,0.01:log>-Chorus Rate (Hz)
@@ -623,7 +623,7 @@ PDEF[83] = 1; PDEF[86] = 3; PDEF[89] = 6; PDEF[92] = 2; PDEF[95] = 5; PDEF[98] =
 // enum sliders: real range is 0..count-1
 function enum_count(list) local(i, n, c) (
   n = 1; i = 0;
-  while ((c = str_getchar(list, i)) > 0) ( c == 124 ? n += 1; i += 1; );
+  while ((c = str_getchar(list, i)) != 0) ( c == 124 ? n += 1; i += 1; );
   n;
 );
 mi = 1;
@@ -634,12 +634,12 @@ loop(100,
 
 // engine specific texts
 ENGDESC = 12400; ENGLBL = 12420;
-ENGDESC[0] = "Two detuned oscillators - the classic Reese (Saunderson, jungle, DnB)";
-ENGDESC[1] = "Stacked unison saws with a JP-style spread - the modern wide Reese";
-ENGDESC[2] = "Pulse width swept at the beat rate - PWM Reese, two phased pulses";
-ENGDESC[3] = "Casio CZ phase distortion, lines 1 + 1' detuned - the original '88 tone";
-ENGDESC[4] = "Detuned carriers phase-modulated by a sine - evolving FM Reese";
-ENGDESC[5] = "Detuned hard-synced pairs - aggressive, vocal neuro growl";
+ENGDESC[0] = "Two detuned oscillators — the classic Reese (Saunderson, jungle, DnB)";
+ENGDESC[1] = "Stacked unison saws with a JP-style spread — the modern wide Reese";
+ENGDESC[2] = "Pulse width swept at the beat rate — PWM Reese, two phased pulses";
+ENGDESC[3] = "Casio CZ phase distortion, lines 1 + 1' detuned — the original ’88 tone";
+ENGDESC[4] = "Detuned carriers phase-modulated by a sine — evolving FM Reese";
+ENGDESC[5] = "Detuned hard-synced pairs — aggressive, vocal neuro growl";
 ENGDESC[6] = "One saw through a key-tracked phaser swept at the beat rate";
 ENGDESC[7] = "Sine wavefolder audio-rate modulated by its detuned twin (Noise Eng. style)";
 function el(e, a, b, c) ( ENGLBL[e*3] = a; ENGLBL[e*3 + 1] = b; ENGLBL[e*3 + 2] = c; );
@@ -908,7 +908,7 @@ function engine_defaults() (
 // copy the n-th item of a '|' separated list into dest
 function list_item(dest, list, n) local(i, c, start, k) (
   i = 0; k = 0; start = 0;
-  while ((c = str_getchar(list, i)) > 0 && k <= n) (
+  while ((c = str_getchar(list, i)) != 0 && k <= n) (
     c == 124 ? ( k == n ? k = n + 1 : ( k += 1; start = i + 1; ); );
     i += 1;
   );
@@ -917,13 +917,20 @@ function list_item(dest, list, n) local(i, c, start, k) (
   dest;
 );
 // build a popup menu string with the current item checked
-function build_menu(dest, list, cur) local(i, n) (
+function build_menu(dest, list, cur) local(i, n, j, c) (
   strcpy(dest, "");
   n = enum_count(list); i = 0;
   loop(n,
     i > 0 ? strcat(dest, "|");
     i == cur ? strcat(dest, "!");
-    strcat(dest, list_item(#mtmp, list, i));
+    list_item(#mtmp, list, i);
+    // gfx_showmenu reads "&" as a mnemonic marker: "&&" draws one "&"
+    j = 0;
+    while ((c = str_getchar(#mtmp, j)) != 0) (
+      strcpy_substr(#mch, #mtmp, j, 1); strcat(dest, #mch);
+      c == 38 ? strcat(dest, "&");
+      j += 1;
+    );
     i += 1;
   );
   dest;
@@ -948,7 +955,7 @@ function fmt_val(dest, i) local(v, u, e, n) (
     e == 0 && i == 7 ? sprintf(dest, INTV[floor(n*7.999)] > 0 ? "+%d st" : "%d st", INTV[floor(n*7.999)]) :
     e == 1 && i == 6 ? sprintf(dest, "%d voices", 3 + floor(v*0.13 + 0.5)) :
     e == 3 && i == 7 ? list_item(dest, CZWAVES, floor(n*5.999)) :
-    e == 4 && i == 7 ? sprintf(dest, "ratio %.1f", FMR[floor(n*5.999)]) :
+    e == 4 && i == 7 ? sprintf(dest, "Ratio %.1f", FMR[floor(n*5.999)]) :
     e == 5 && i == 6 ? sprintf(dest, "x%.2f", 1 + n*7) :
     e == 6 && i == 8 ? sprintf(dest, "%d stages", 2*(1 + floor(n*5.999))) :
     sprintf(dest, "%.0f%%", v);
@@ -1222,7 +1229,7 @@ function draw_lfo(x, y, w, h, shape) local(i, p, v, px, py, lpx, lpy) (
 );
 
 // ================================================================ presets
-PRESETS = "Init - Classic Dual Saw|Saunderson '88 (CZ)|Terrorist Jungle|Mutant Techstep|Neuro Double Notch|Liquid Roller|Garage PWM|FM Growl|Sync Scream|Filter-Method Reese|Cross-Fold Mod|Yoi Talker|Tempo-Locked Throb|Barberpole Shift|Bitcrushed Sampler|Burial Rumble|Wide Unison Wall|Hoover Reese|Ring-Mod Metal|Talking Flanger";
+PRESETS = "Init — Classic Dual Saw|Saunderson ’88 (CZ)|Terrorist Jungle|Mutant Techstep|Neuro Double Notch|Liquid Roller|Garage PWM|FM Growl|Sync Scream|Filter-Method Reese|Cross-Fold Mod|Yoi Talker|Tempo-Locked Throb|Barberpole Shift|Bitcrushed Sampler|Burial Rumble|Wide Unison Wall|Hoover Reese|Ring-Mod Metal|Talking Flanger";
 NUM_PRESETS = enum_count(PRESETS);
 function pv(i, v) ( p_put(i, v); );
 function mod(slot, msrcv, dst, amt) ( pv(83 + slot*3, msrcv); pv(84 + slot*3, dst); pv(85 + slot*3, amt); );
@@ -1786,7 +1793,7 @@ col(0.075, 0.08, 0.095, 1); gfx_rect(0, 0, gfx_w, gfx_h);
 accent(0.24, 0.9, 0.76);
 font(4); col(0.95, 0.97, 1, 1); TX("REESE", 14, 6, 100, 30, 4);
 col(acr, acg, acb, 1); TX("BASSER", 118, 6, 130, 30, 4);
-font(6); col(0.5, 0.53, 0.6, 1); TX("detuned bass synthesizer", 16, 35, 220, 11, 0);
+font(6); col(0.5, 0.53, 0.6, 1); TX("Detuned bass synthesizer", 16, 35, 220, 11, 0);
 // preset selector
 col(0.07, 0.075, 0.09, 1); RF(292, 8, 290, 32);
 col(0.25, 0.27, 0.32, 1); RO(292, 8, 290, 32);
@@ -1806,14 +1813,14 @@ inr(292, 8, 290, 32) && ui_click ? (
 accent(1.0, 0.35, 0.55);
 button("MUTATE", 628, 8, 110, 32) ? (
   gfx_x = ui_ox + 628*ui_s; gfx_y = ui_oy + 40*ui_s;
-  ui_res = gfx_showmenu("Mutate engine|Mutate mangle + movement|Mutate modulation|Mutate everything||Nudge all (subtle)");
+  ui_res = gfx_showmenu("Mutate Engine|Mutate Mangle and Movement|Mutate Modulation|Mutate Everything||Nudge All (Subtle)");
   ui_res > 0 ? mutate(ui_res - 1);
 );
 // live readout
 font(6); col(0.5, 0.53, 0.6, 1);
-sprintf(#ro, "note %.1f Hz", ui_f0); TX(#ro, 750, 8, 198, 12, 2);
-sprintf(#ro, "beat %.2f Hz", abs(ui_beat)); TX(#ro, 750, 21, 198, 12, 2);
-sprintf(#ro, "%s  |  %dx oversampling", aenv_o.st > 0 ? "voice on" : "idle", quality == 0 ? 1 : quality == 1 ? 2 : 4);
+sprintf(#ro, "Note %.1f Hz", ui_f0); TX(#ro, 750, 8, 198, 12, 2);
+sprintf(#ro, "Beat %.2f Hz", abs(ui_beat)); TX(#ro, 750, 21, 198, 12, 2);
+sprintf(#ro, "%s  ·  %dx oversampling", aenv_o.st > 0 ? "Voice on" : "Idle", quality == 0 ? 1 : quality == 1 ? 2 : 4);
 TX(#ro, 750, 34, 198, 12, 2);
 
 // ---------------------------------------------------------------- page tabs
@@ -1854,7 +1861,7 @@ ui_page == 0 ? (
   ) : (
     font(6); col(0.35, 0.37, 0.42, 1);
     TX("UNISON", 306, 194, 66, 12, 1); TX("UNI DET", 378, 194, 66, 12, 1);
-    TX("(supersaw", 306, 208, 138, 12, 1); TX("has its own voices)", 306, 220, 138, 12, 1);
+    TX("Supersaw has its", 306, 208, 138, 12, 1); TX("own voices.", 306, 220, 138, 12, 1);
   );
   knob(11, 450, 148, "STEREO");
   knob(12, 522, 148, "DRIFT");
@@ -1863,11 +1870,11 @@ ui_page == 0 ? (
   small_caption("OSC PHASE", 212, 230, 180);
   segs(13, 212, 246, 180, 24);
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX(detmode == 0 ? "beat follows pitch" : detmode == 1 ? "same beat on every note" : "beat locked to the grid", 20, 274, 180, 12, 1);
-  TX(phasemode == 0 ? "never reset" : phasemode == 1 ? "same attack every note" : "random start", 212, 274, 180, 12, 1);
+  TX(detmode == 0 ? "Beat follows pitch" : detmode == 1 ? "Same beat on every note" : "Beat locked to the grid", 20, 274, 180, 12, 1);
+  TX(phasemode == 0 ? "Never reset" : phasemode == 1 ? "Same attack every note" : "Random start", 212, 274, 180, 12, 1);
   knob(14, 450, 228, "LEVEL");
   knob(79, 522, 228, "OCTAVE");
-  small_caption("BEAT (the Reese throb)", 20, 304, 580);
+  small_caption("BEAT (THE REESE THROB)", 20, 304, 580);
   col(0.07, 0.075, 0.09, 1); RF(20, 322, 580, 28);
   ui_bv = 0.5 + 0.5*cos(2*$pi*beat_ph);
   col(acr, acg, acb, 0.25 + 0.6*ui_bv); RF(22, 324, 576*ui_bv, 24);
@@ -1876,12 +1883,12 @@ ui_page == 0 ? (
   sprintf(#bt, "%.2f Hz   (one throb every %.2f s)", abs(ui_beat), 1/max(abs(ui_beat), 0.001));
   TX(#bt, 20, 322, 580, 28, 5);
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("Tip: Hz or Sync mode keeps the throb speed the same across a whole bassline", 20, 358, 580, 12, 1);
+  TX("Tip: Hz or Sync mode keeps the throb speed the same across a whole bassline.", 20, 358, 580, 12, 1);
 
   // -------------------------------------------------------------- scope
   panel(620, 92, 330, 300, "SCOPE / THROB");
   draw_scope(630, 120, 310, 170);
-  font(6); col(0.5, 0.53, 0.6, 1); TX("level over the last 3 s", 630, 296, 310, 12, 0);
+  font(6); col(0.5, 0.53, 0.6, 1); TX("Level over the last 3 s", 630, 296, 310, 12, 0);
   draw_throb(630, 312, 310, 70);
 
   // -------------------------------------------------------------- filter
@@ -1899,7 +1906,7 @@ ui_page == 0 ? (
   knob(20, 438, 512, "LOW CUT");
   small_caption("SUB OCT", 518, 516, 150); segs(17, 518, 532, 150, 22);
   small_caption("SUB WAVE", 440, 590, 230); segs(16, 440, 606, 230, 22);
-  font(6); col(0.5, 0.53, 0.6, 1); TX("sub: mono, no FX   low cut: Reese only", 440, 636, 230, 12, 1);
+  font(6); col(0.5, 0.53, 0.6, 1); TX("Sub: mono, no FX  ·  Low cut: Reese only", 440, 636, 230, 12, 1);
 
   // -------------------------------------------------------------- play + output
   accent(0.8, 0.82, 0.86);
@@ -1910,8 +1917,8 @@ ui_page == 0 ? (
   small_caption("OVERSAMPLING", 700, 566, 115); segs(80, 700, 582, 115, 22);
   small_caption("CLIPPER", 825, 566, 115); segs(82, 825, 582, 115, 22);
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("overlap notes to glide (legato)", 700, 616, 240, 12, 1);
-  TX("1x = light CPU, 4x = cleanest drive", 700, 632, 240, 12, 1);
+  TX("Overlap notes to glide (legato).", 700, 616, 240, 12, 1);
+  TX("1x for light CPU, 4x for the cleanest drive", 700, 632, 240, 12, 1);
 );
 
 // ================================================================ PAGE: MODULATION
@@ -1924,8 +1931,8 @@ function lfo_panel(x, y, w, h, base, title) (
   small_caption("SYNC", x + 160, y + 96, w - 170); segs(base + 1, x + 160, y + 112, w - 170, 22);
   small_caption("TRIGGER", x + 160, y + 140, w - 170); segs(base + 4, x + 160, y + 156, w - 170, 22);
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("route it in the mod matrix", x + 10, y + 196, w - 20, 12, 1);
-  TX("BPM + Free = locked to the song", x + 10, y + 212, w - 20, 12, 1);
+  TX("Route it in the mod matrix.", x + 10, y + 196, w - 20, 12, 1);
+  TX("BPM and Free lock it to the song.", x + 10, y + 212, w - 20, 12, 1);
 );
 ui_page == 1 ? (
   accent(0.35, 0.65, 1.0);
@@ -1938,14 +1945,14 @@ ui_page == 1 ? (
   draw_env(335, 122, 285, 66, 31);
   knob(31, 333, 198, "ATTACK"); knob(32, 405, 198, "DECAY"); knob(33, 477, 198, "SUSTAIN"); knob(34, 549, 198, "RELEASE");
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("drives the filter ENV knob and any", 335, 292, 285, 12, 1);
-  TX("mod matrix slot using 'Mod Env'", 335, 308, 285, 12, 1);
+  TX("Drives the filter’s ENV knob and any", 335, 292, 285, 12, 1);
+  TX("mod matrix slot using “Mod Env”.", 335, 308, 285, 12, 1);
   lfo_panel(640, 92, 310, 262, 35, "LFO 1");
   lfo_panel(10, 362, 305, 300, 41, "LFO 2");
 
   panel(325, 362, 625, 300, "MOD MATRIX");
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("source  ->  destination   amount (drag; double-click = 0)", 470, 368, 470, 14, 2);
+  TX("Source  →  destination  ·  amount (drag; double-click for 0)", 470, 368, 470, 14, 2);
   ui_mi = 0;
   loop(6,
     ui_my_ = 400 + ui_mi*42;
@@ -1965,8 +1972,8 @@ ui_page == 2 ? (
   knob(48, 18, 134, "DRIVE"); knob(49, 96, 134, "TONE"); knob(50, 174, 134, "MIX");
   small_caption("POSITION", 20, 222, 280); segs(51, 20, 238, 280, 24);
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("post filter = classic, pre = gnarly", 20, 270, 280, 12, 1);
-  TX("oversampled; drive 0 = off", 20, 286, 280, 12, 1);
+  TX("Post filter is classic, pre is gnarly.", 20, 270, 280, 12, 1);
+  TX("Oversampled; drive at 0 is off.", 20, 286, 280, 12, 1);
 
   accent(0.7, 0.5, 1.0);
   panel(320, 92, 630, 262, "MOVEMENT");
@@ -1974,11 +1981,11 @@ ui_page == 2 ? (
   knob(53, 330, 134, "FREQ"); knob(54, 420, 134, "DEPTH"); knob(55, 510, 134, "RATE");
   knob(56, 600, 134, "RESO"); knob(57, 690, 134, "STEREO"); knob(58, 780, 134, "MIX");
   font(5); col(0.62, 0.65, 0.72, 1);
-  TX(mvtype == 0 ? "Off - pick a type above" :
-     mvtype == 1 ? "Two notches an octave apart sweep the harmonics (neuro style)" :
+  TX(mvtype == 0 ? "Off — choose a type above." :
+     mvtype == 1 ? "Two notches an octave apart sweep the harmonics (neuro style)." :
      mvtype == 2 ? "6-stage phaser with feedback, swept in time with the song" :
-                   "Comb filter tuned by FREQ, swept by DEPTH, RESO = feedback", 330, 230, 610, 16, 1);
-  font(6); col(0.5, 0.53, 0.6, 1); TX("RATE is a tempo division", 330, 254, 610, 12, 1);
+                   "Comb filter tuned by FREQ, swept by DEPTH, with RESO as feedback", 330, 230, 610, 16, 1);
+  font(6); col(0.5, 0.53, 0.6, 1); TX("RATE is a tempo division.", 330, 254, 610, 12, 1);
 
   accent(1.0, 0.35, 0.55);
   panel(10, 362, 700, 300, "MANGLE");
@@ -1991,24 +1998,24 @@ ui_page == 2 ? (
   knob(65, 434, 412, "BITS"); knob(66, 502, 412, "DOWN"); knob(67, 570, 412, "MIX");
   knob(68, 640, 412, "AMOUNT");
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("talking A-E-I-O-U", 20, 494, 136, 12, 1);
-  TX("inharmonic / barber-pole", 158, 494, 136, 12, 1);
-  TX("in tune with the note", 296, 494, 136, 12, 1);
-  TX("bits + sample rate", 434, 494, 204, 12, 1);
+  TX("Talking A-E-I-O-U", 20, 494, 136, 12, 1);
+  TX("Inharmonic, barber-pole", 158, 494, 136, 12, 1);
+  TX("In tune with the note", 296, 494, 136, 12, 1);
+  TX("Bits and sample rate", 434, 494, 204, 12, 1);
   TX("OTT-ish", 640, 494, 66, 12, 1);
   small_caption("SIGNAL FLOW", 20, 540, 680);
   font(5); col(0.62, 0.65, 0.72, 1);
-  TX("voice  >  formant  >  ring  >  shift  >  crush  >  movement  >  squash  >  stereo  >  + sub", 20, 562, 680, 16, 1);
+  TX("Voice  →  formant  →  ring  →  shift  →  crush  →  movement  →  squash  →  stereo  →  + sub", 20, 562, 680, 16, 1);
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("MUTATE (top) randomises these for happy accidents", 20, 600, 680, 12, 1);
+  TX("MUTATE (at the top) randomises these for happy accidents.", 20, 600, 680, 12, 1);
 
   accent(0.7, 0.5, 1.0);
   panel(720, 362, 230, 300, "STEREO");
   knob(69, 728, 392, "CHORUS"); knob(70, 800, 392, "RATE"); knob(71, 872, 392, "DEPTH");
   knob(72, 764, 480, "WIDTH"); knob(73, 836, 480, "MONO <");
   font(6); col(0.5, 0.53, 0.6, 1);
-  TX("everything below MONO <", 730, 572, 210, 12, 1);
-  TX("is summed to mono", 730, 586, 210, 12, 1);
+  TX("Everything below MONO <", 730, 572, 210, 12, 1);
+  TX("is summed to mono.", 730, 586, 210, 12, 1);
 );
 
 // ---------------------------------------------------------------- footer / help line
@@ -2016,8 +2023,8 @@ font(6); col(0.45, 0.48, 0.55, 1);
 ui_hov > 0 ? (
   sprintf(#ft, "%s: %s", PNAME[ui_hov], fmt_val(#fv, ui_hov));
   TX(#ft, 12, 668, 600, 12, 0);
-) : TX("drag = adjust   shift+drag = fine   double-click / ctrl+click = default   wheel = step", 12, 668, 600, 12, 0);
-TX("Reese Basser 1.1", 750, 668, 198, 12, 2);
+) : TX("Drag to adjust  ·  Shift-drag for fine control  ·  Double-click or Ctrl/Cmd-click to reset  ·  Scroll to step", 12, 668, 600, 12, 0);
+TX("Reese Basser 1.1.1", 750, 668, 198, 12, 2);
 
 mouse_wheel = 0;
 ui_last_cap = mouse_cap;

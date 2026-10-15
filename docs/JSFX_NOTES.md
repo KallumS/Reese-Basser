@@ -76,7 +76,7 @@ Where a behaviour has already caused a bug, it is marked ⚠.
   0–1023 are mutable; `#name` strings are mutable and persistent; bare `#` is a temporary.
   `#s = "a"` is strcpy and `#s += "b"` is strcat. ✔ used
 - `strcpy/strcat/strlen/strcmp/strncpy/strcpy_substr(dst,src,ofs,maxlen)/str_getchar(s,i[,type])`
-  (signed char by default), `str_setchar`, `strcpy_fromslider(dst, sliderX)` (gets the enum label).
+  (signed char by default, so a UTF-8 byte reads below 0: loop to `!= 0`, never `> 0`), `str_setchar`, `strcpy_fromslider(dst, sliderX)` (gets the enum label).
 - `sprintf` supports `%s %d %i %u %x %X %c %f %e %g`, flags `+ - 0`, width and precision, and `%%`.
 
 ## Graphics (@gfx only)
@@ -107,3 +107,10 @@ Where a behaviour has already caused a bug, it is marked ⚠.
 - JSFX UIs can be shown embedded in the TCP/MCP (right-click the FX: *Show embedded UI*). Our UI
   scales to fit but is not designed for that tiny size (possible upgrade: a compact layout when
   `gfx_ext_flags & 1`).
+
+## Text beyond ASCII
+- `gfx_drawstr` and `gfx_showmenu` draw UTF-8 (— ’ “ ” → ·), and string functions work in bytes.
+  Any loop over a string's characters must stop on `!= 0` (see `str_getchar` above).
+- `gfx_showmenu` reads `&` as a mnemonic marker; `build_menu` doubles it so "Sample & Hold" shows.
+- The transpiler writes string literals byte by byte with octal escapes: a C hex escape swallows
+  the digits after it, so "’88" lost its 88 in the harness until it did.

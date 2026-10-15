@@ -723,7 +723,11 @@ def main():
     out.append(f'const int NUM_STR_LIT = {len(gen.strings)};\n')
     out.append('const char *STR_LIT[] = {\n')
     for s in gen.strings:
-        out.append('  "' + s.encode('unicode_escape').decode('ascii').replace('"', '\\"') + '",\n')
+        # byte by byte, octal escapes: a hex escape would swallow the digits
+        # after it ("\x99" then "88" reads as one escape), losing text
+        # such as "’88" that follows a UTF-8 character
+        out.append('  "' + ''.join(chr(c) if 32 <= c < 127 and c not in (34, 92) else '\\%03o' % c
+                                   for c in s.encode('latin-1')) + '",\n')
     out.append('  0 };\n')
     out.append(f'const int NUM_STR_NAMED = {len(gen.named_strings)};\n')
     # sliders

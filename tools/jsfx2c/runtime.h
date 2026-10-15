@@ -47,15 +47,15 @@ double r_gfx_measurestr(double s, double *w, double *h);
 RF(midisend); RF(slider_automate); RF(sliderchange); RF(slider_show); RF(memset); RF(memcpy);
 RF(freembuf); RF(time_precise); RF(gfx_set); RF(gfx_rect); RF(gfx_line); RF(gfx_lineto);
 RF(gfx_circle); RF(gfx_arc); RF(gfx_roundrect); RF(gfx_drawstr); RF(gfx_setfont); RF(gfx_triangle);
-RF(gfx_showmenu); RF(gfx_drawnumber); RF(gfx_getchar); RF(gfx_setcursor); RF(gfx_gradrect);
+RF(gfx_showmenu); RF(gfx_drawnumber); RF(gfx_getchar); RF(gfx_setcursor); RF(gfx_gradrect); RF(gfx_getfont);
 RF(strlen); RF(strcpy); RF(strcat); RF(strcmp); RF(stricmp); RF(strcpy_substr); RF(str_getchar);
-RF(str_setchar); RF(sprintf); RF(strncpy); RF(match); RF(printf);
+RF(str_setchar); RF(sprintf); RF(strncpy); RF(match); RF(matchi); RF(printf);
 double r_strcpy_2(double d, double s);
 double r_strcat_2(double d, double s);
 
 extern double v_srate, v_spl0, v_spl1, v_tempo, v_beat_position, v_play_state, v_play_position,
     v_samplesblock, v_num_ch, v_ts_num, v_ts_denom, v_ext_noinit, v_ext_nodenorm, v_gfx_r, v_gfx_g,
-    v_gfx_b, v_gfx_a, v_gfx_x, v_gfx_y, v_gfx_w, v_gfx_h, v_gfx_texth, v_gfx_ext_retina, v_gfx_clear,
+    v_gfx_b, v_gfx_a, v_gfx_x, v_gfx_y, v_gfx_w, v_gfx_h, v_gfx_texth, v_gfx_ext_retina, v_gfx_ext_flags, v_gfx_clear,
     v_gfx_mode, v_gfx_dest, v_mouse_x, v_mouse_y, v_mouse_cap, v_mouse_wheel, v_mouse_hwheel,
     v_trigger, v_pdc_delay, v_pdc_bot_ch, v_pdc_top_ch, v_midi_bus, v_ext_midi_bus;
 

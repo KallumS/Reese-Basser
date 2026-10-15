@@ -22,7 +22,7 @@ TOKEN_RE = re.compile(r'''
    (?P<ws>\s+)
  | (?P<lcomment>//[^\n]*)
  | (?P<bcomment>/\*.*?\*/)
- | (?P<num>0x[0-9a-fA-F]+|\$x[0-9a-fA-F]+|\$'.'|\$pi|\$e|\$phi|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)
+ | (?P<num>0x[0-9a-fA-F]+|\$x[0-9a-fA-F]+|\$'.'|'[^'\\\n]{1,4}'|\$pi|\$e|\$phi|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)
  | (?P<str>"(?:\\.|[^"\\])*")
  | (?P<ident>\#?[A-Za-z_][A-Za-z0-9_.]*|\#)
  | (?P<op>===|!==|<<|>>|==|!=|<=|>=|&&|\|\||\+=|-=|\*=|/=|%=|\^=|\|=|&=|~=|[-+*/%^|&~!<>=?:;,()\[\]])
@@ -236,6 +236,12 @@ class Parser:
                 val = float(int(v[2:], 16))
             elif v.startswith("$'"):
                 val = float(ord(v[2]))
+            elif v.startswith("'"):
+                # multi-character constant: 'rght' is the bytes r g h t, big-endian
+                # (what gfx_getchar() returns for the right arrow key)
+                val = 0.0
+                for ch in v[1:-1].encode('latin-1'):
+                    val = val * 256 + ch
             elif v == '$pi':
                 val = 3.141592653589793
             elif v == '$e':
@@ -343,7 +349,7 @@ def parse_sliders(header):
 SPECIAL_VARS = ['srate', 'spl0', 'spl1', 'tempo', 'beat_position', 'play_state', 'play_position',
                 'samplesblock', 'num_ch', 'ts_num', 'ts_denom', 'ext_noinit', 'ext_nodenorm',
                 'gfx_r', 'gfx_g', 'gfx_b', 'gfx_a', 'gfx_x', 'gfx_y', 'gfx_w', 'gfx_h', 'gfx_texth',
-                'gfx_ext_retina', 'gfx_clear', 'gfx_mode', 'gfx_dest',
+                'gfx_ext_retina', 'gfx_ext_flags', 'gfx_clear', 'gfx_mode', 'gfx_dest',
                 'mouse_x', 'mouse_y', 'mouse_cap', 'mouse_wheel', 'mouse_hwheel', 'trigger',
                 'pdc_delay', 'pdc_bot_ch', 'pdc_top_ch', 'midi_bus', 'ext_midi_bus']
 
@@ -362,9 +368,9 @@ RUNTIME_FUNCS = {
     'gfx_set': None, 'gfx_rect': None, 'gfx_line': None, 'gfx_lineto': None, 'gfx_circle': None,
     'gfx_arc': None, 'gfx_roundrect': None, 'gfx_drawstr': None, 'gfx_setfont': None,
     'gfx_triangle': None, 'gfx_showmenu': 1, 'gfx_drawnumber': 2, 'gfx_getchar': None,
-    'gfx_setcursor': None, 'gfx_gradrect': None,
+    'gfx_setcursor': None, 'gfx_gradrect': None, 'gfx_getfont': None,
     'strlen': 1, 'strcpy': 2, 'strcat': 2, 'strcmp': 2, 'stricmp': 2, 'strcpy_substr': None,
-    'str_getchar': None, 'str_setchar': None, 'sprintf': None, 'strncpy': 3, 'match': None,
+    'str_getchar': None, 'str_setchar': None, 'sprintf': None, 'strncpy': 3, 'match': None, 'matchi': None,
     'printf': None,
 }
 
@@ -374,7 +380,8 @@ ARG_RANGE = {'gfx_rect': (4, 4), 'gfx_line': (4, 5), 'gfx_lineto': (2, 3), 'gfx_
              'gfx_arc': (5, 6), 'gfx_roundrect': (5, 6), 'gfx_drawstr': (1, 4), 'gfx_setfont': (1, 4),
              'gfx_triangle': (6, 40), 'gfx_showmenu': (1, 1), 'gfx_set': (1, 7),
              'slider_automate': (1, 2), 'sliderchange': (1, 1), 'strcpy_substr': (4, 4),
-             'str_getchar': (2, 3), 'midirecv': (3, 4), 'time_precise': (0, 1)}
+             'str_getchar': (2, 3), 'midirecv': (3, 4), 'time_precise': (0, 1),
+             'gfx_getfont': (0, 1), 'gfx_getchar': (0, 2), 'match': (2, 40), 'matchi': (2, 40)}
 
 
 class CGen:

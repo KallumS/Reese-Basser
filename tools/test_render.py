@@ -16,6 +16,9 @@ import wave
 
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ui_checks  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 H = os.path.join(ROOT, 'tools', 'jsfx2c')
 
@@ -75,6 +78,211 @@ def envelope_rate(x, sr, lo=0.3, hi=30):
     freqs = np.fft.rfftfreq(1 << 16, 1 / esr)
     band = (freqs > lo) & (freqs < hi)
     return freqs[band][np.argmax(spec[band])]
+
+
+# ----------------------------------------------------------------- Apple's HIG Foundations (ADR-015)
+def kc(s):
+    """gfx_getchar()'s code for a named key: 'rght' is the bytes r g h t, big-endian."""
+    v = 0
+    for ch in s.encode():
+        v = v * 256 + ch
+    return v
+
+
+TAB, RET, ESC, SPACE = 9, 13, 27, 32
+PAGE_STOPS = {0: 40, 1: 45, 2: 35}   # every control on each page, counted off the screen:
+#   all pages: <, preset, >, Mutate, Options, three tabs (8)
+#   Synth: engine menu, 8 knobs, 2 switches, 2 knobs | filter menu, 5 knobs | 4 knobs, 2 switches | 3 knobs, 4 switches
+#   Modulation: 4 knobs + bar | 4 knobs | LFO 1 menu, 2 knobs, 2 switches | LFO 2 the same | 6 x (2 menus + bar)
+#   FX: menu, 3 knobs, switch | menu, 6 knobs | 10 knobs | 5 knobs
+TAB_XY = {0: (85, 78), 1: (247, 78), 2: (409, 78)}
+
+
+def gfx_run(exe, out, name, body, env=None, size=None):
+    """Run a gfx script (a list of lines); returns (stdout, stderr, {logname: lines})."""
+    sc = os.path.join(out, name + '.ui')
+    lines = ['frame'] + ([f'size {size[0]} {size[1]}'] if size else []) + body
+    logs = []
+    for i, l in enumerate(lines):
+        if l.startswith('logframe') and len(l.split()) == 1:
+            p = os.path.join(out, f'{name}_{len(logs)}.log')
+            lines[i] = 'logframe ' + p
+            logs.append(p)
+    open(sc, 'w').write('\n'.join(lines) + '\n')
+    e = dict(os.environ)
+    e.update(env or {})
+    r = subprocess.run([exe, 'gfx', '44100', sc, os.path.join(out, name + '.log')], capture_output=True, text=True,
+                       env=e)
+    if r.returncode != 0 or 'RUNTIME ERROR' in r.stderr:
+        print(r.stderr[-2000:])
+    return r.stdout, r.stderr, [ui_checks.read(p) for p in logs]
+
+
+def click(x, y, cap=1):
+    return [f'mouse {x} {y} {cap}', 'frame', f'mouse {x} {y} 0', 'frame', 'mouse -100 -100 0']
+
+
+def keys(*codes, shift=False):
+    out = []
+    for c in codes:
+        out += ([f'mouse -100 -100 8'] if shift else []) + [f'key {c}', 'frame'] + (['mouse -100 -100 0'] if shift else [])
+    return out
+
+
+def sliders(stdout):
+    return {int(l.split()[0][6:]): float(l.split()[2]) for l in stdout.split('\n') if l.startswith('slider')}
+
+
+def check(label, ok, detail=''):
+    print(f'  {label}: {"OK" if ok else "FAIL"}{(" — " + detail) if detail and not ok else ""}')
+    return 0 if ok else 1
+
+
+def hig_tests(exe, out):
+    fails = 0
+    playing = ['menu 4'] + click(450, 22) + ['note 36 100', 'audio 0.5']
+
+    print('--- HIG: every line of text 7:1 on what it sits on, and fits its box (Arial metrics +8%)')
+    states = {}
+    for page in (0, 1, 2):
+        body = list(playing) + (click(*TAB_XY[page]) if page else [])
+        for k in range(4):   # the beat bar pulses: look at it at four moments
+            body += ['audio 0.11', 'logframe']
+        states[f'page {page}'] = gfx_run(exe, out, f'hig_c{page}', body)[2]
+    # hover and keyboard states, and text that changes with the settings
+    states['hover'] = gfx_run(exe, out, 'hig_hover', playing + [
+        'mouse 110 270 0', 'logframe', 'mouse 680 22 0', 'logframe', 'mouse 247 78 0', 'logframe',
+        'mouse 400 22 0', 'logframe', 'mouse -100 -100 0'] + keys(*[TAB] * 10) + ['logframe']
+        + click(*TAB_XY[1]) + ['mouse 830 424 0', 'logframe', 'mouse 85 78 0', 'logframe'])[2]
+    for sl, vals in ((1, range(8)), (52, range(4)), (3, range(3)), (13, range(3)), (21, (5,))):
+        body = []
+        for v in vals:
+            body += [f'slider {sl} {v}'] + (click(*TAB_XY[2]) if sl == 52 else []) + ['logframe']
+        states[f'slider {sl}'] = gfx_run(exe, out, f'hig_s{sl}', body)[2]
+    bad_c, bad_f, small, seen = [], [], [], 0
+    for name, logs in states.items():
+        for lines in logs:
+            seen += sum(1 for l in lines if l.startswith('textbox'))
+            bad_c += [(name,) + b for b in ui_checks.contrast(lines)]
+            bad_f += [(name,) + b for b in ui_checks.fits(lines)]
+            small += [(name,) + b for b in ui_checks.small_text(lines, 10)]
+    fails += check(f'contrast, {seen} strings in {sum(map(len, states.values()))} frames', not bad_c, str(bad_c[:6]))
+    fails += check('every string fits its box', not bad_f, str(bad_f[:6]))
+    fails += check('nothing smaller than 10 px at 100%', not small, str(small[:6]))
+    low = [t['text'] for lines in states['page 0'] for t in ui_checks.texts(lines) if t['y'] >= 664]
+    fails += check('nothing at the bottom edge (no text below y 664)', not low, str(low[:4]))
+    top = ui_checks.text_at(states['page 0'][0], 'Tab to use the keys')
+    fails += check('the help line is at the top', bool(top) and top[0]['y'] < 60)
+
+    print('--- HIG: the keyboard alone (Tab, Shift+Tab, Return/Space, arrows, Delete, Esc)')
+    for page, want in PAGE_STOPS.items():
+        body = (click(*TAB_XY[page]) if page else []) + ['dumpmem 130000 1100']
+        for k in range(want + 1):
+            body += keys(TAB) + ['logframe']
+        so, _, logs = gfx_run(exe, out, f'hig_tab{page}', body)
+        focus = ui_checks.focus_list(so)
+        rings = [ui_checks.rings(l) for l in logs]
+        one = all(len(r) == 1 for r in rings)
+        fails += check(f'page {page}: {len(focus)} controls in the Tab order (expect {want}), one ring per press',
+                       len(focus) == want and one, f'{len(focus)} controls, rings per press {[len(r) for r in rings]}')
+        inside = True
+        for k, r in enumerate(rings[:want]):
+            if len(r) != 1:
+                continue
+            fid, kind, x, y, w, h = focus[k]
+            bx = r[0]
+            inside &= bx[0] < x and bx[1] < y and bx[2] > x + w and bx[3] > y + h
+        fails += check(f'page {page}: each press rings the next control in reading order, then wraps',
+                       inside and one and rings[want] == rings[0])
+        notacc = not any(ui_checks.other_rings(l) for l in logs)
+        fails += check(f'page {page}: the ring is near-white #F2F4F7, never an accent', notacc)
+        short = [f for f in focus if f[5] < 28]
+        fails += check(f'page {page}: every control at least 28 tall', not short, str(short[:4]))
+        close = ui_checks.spacing(focus)
+        fails += check(f'page {page}: controls at least 12 apart', not close, str(close[:6]))
+    _, _, logs = gfx_run(exe, out, 'hig_stab', keys(TAB, shift=True) + ['logframe'])
+    r = ui_checks.rings(logs[0])
+    fails += check('Shift+Tab from nothing goes to the last control (Clipper)',
+                   len(r) == 1 and r[0][0] < 826 < r[0][2] and r[0][1] < 596 < r[0][3], str(r))
+    _, _, logs = gfx_run(exe, out, 'hig_ret', keys(*[TAB] * 7, RET) + ['logframe'])
+    fails += check('Return on the Modulation tab opens that page', bool(ui_checks.text_at(logs[0], 'MOD MATRIX')))
+    _, se, _ = gfx_run(exe, out, 'hig_menu', ['menu 5'] + keys(TAB, TAB, SPACE) + ['logframe'])
+    _, _, logs = gfx_run(exe, out, 'hig_menu2', ['menu 5'] + keys(TAB, TAB, SPACE) + ['logframe'])
+    fails += check('Space on the preset box opens the preset menu',
+                   '[menu] ' in se and bool(ui_checks.text_at(logs[0], 'Neuro Double Notch')))
+    to_detune = keys(*[TAB] * 10)
+    so, _, logs = gfx_run(exe, out, 'hig_arrow', to_detune + ['logframe'] + keys(kc('rght')) + ['dumpsliders'])
+    a = sliders(so)[2]
+    hint = [t for t in ui_checks.texts(logs[0]) if t['text'].startswith('Detune:')]
+    fails += check('the focused knob is named with its value in the help line', bool(hint) and hint[0]['y'] < 60)
+    so, _, _ = gfx_run(exe, out, 'hig_arrow2', to_detune + keys(kc('rght'), shift=True) + ['dumpsliders'])
+    b = sliders(so)[2]
+    so, _, _ = gfx_run(exe, out, 'hig_arrow3', to_detune + keys(kc('rght'), kc('rght'), kc('del')) + ['dumpsliders'])
+    c = sliders(so)[2]
+    fails += check('arrows nudge a knob, Shift finer, Delete resets', a > 30.5 and 30 < b < a and c == 30,
+                   f'right {a}, shift-right {b}, delete {c}')
+    so, _, _ = gfx_run(exe, out, 'hig_dd', keys(*[TAB] * 9, kc('down')) + ['dumpsliders'])
+    s1 = sliders(so)
+    so, _, _ = gfx_run(exe, out, 'hig_sg', keys(*[TAB] * 18, kc('rght')) + keys(*[TAB] * 1, RET) + ['dumpsliders'])
+    s2 = sliders(so)
+    fails += check('arrows step a menu and a switch, Return steps a switch',
+                   s1[1] == 1 and s2[3] == 1 and s2[13] == 1, f'engine {s1[1]}, detune mode {s2[3]}, phase {s2[13]}')
+    _, _, logs = gfx_run(exe, out, 'hig_esc', keys(TAB, TAB) + ['logframe'] + keys(ESC) + ['logframe']
+                         + keys(TAB) + click(700, 300) + ['logframe'])
+    fails += check('Esc and a click both let go of the focus',
+                   [len(ui_checks.rings(l)) for l in logs] == [1, 0, 0])
+
+    print('--- HIG: interface size, Retina, the system font, scrolling')
+    def biggest_font(lines):
+        return max(float(l.split()[1]) for l in lines if l.startswith('font '))
+
+    def scrollbars(lines):
+        return [l for l in lines if l.startswith('rect') and ' 0.4500 0.4800 0.5500 ' in l]
+    so, _, logs = gfx_run(exe, out, 'hig_opt', ['menu 4'] + click(898, 22) + ['logframe', 'dumpsliders'])
+    s = sliders(so)
+    fails += check('Options → Interface Size 200% is remembered (slider 101)', s.get(101) == 3, str(s.get(101)))
+    fails += check('200% in a 960 x 684 window: text twice the size, scroll bars shown',
+                   biggest_font(logs[0]) == 54 and len(scrollbars(logs[0])) == 2,
+                   f'font {biggest_font(logs[0])}, bars {len(scrollbars(logs[0]))}')
+    body = ['slider 101 3'] + keys(*[TAB] * 40) + ['logframe']
+    _, _, logs = gfx_run(exe, out, 'hig_follow', body)
+    r = ui_checks.rings(logs[0])
+    fails += check('at 200% the focus scrolls into view (last control, bottom right)',
+                   len(r) == 1 and r[0][0] >= 0 and r[0][1] >= 0 and r[0][2] <= 960 and r[0][3] <= 684, str(r))
+    for label, body, size, env, want_font, want_bars in (
+            ('Retina 2x at 100%: twice the size, no scroll bars', ['retina 2'], (1920, 1368), None, 54, 0),
+            ('100% in a small window keeps its size and scrolls', [], (700, 500), None, 27, 2),
+            ('Fit to Window shrinks to fit, no scroll bars', ['slider 101 4'], (480, 342), None, 13.5, 0),
+            ('embedded in a track panel: fits, no scroll bars', ['extflags 1'], (480, 342), None, 13.5, 0)):
+        _, _, logs = gfx_run(exe, out, 'hig_sz', body + ['logframe'], size=size, env=env)
+        fails += check(label, biggest_font(logs[0]) == want_font and len(scrollbars(logs[0])) == want_bars,
+                       f'font {biggest_font(logs[0])}, bars {len(scrollbars(logs[0]))}')
+    _, _, logs = gfx_run(exe, out, 'hig_wheel', ['logframe', 'mouse 780 300 0', 'wheel -240', 'frame', 'logframe'],
+                         size=(700, 500))
+    y0 = ui_checks.text_at(logs[0], 'SCOPE / THROB')[0]['y']
+    y1 = ui_checks.text_at(logs[1], 'SCOPE / THROB')[0]['y']
+    fails += check('the wheel scrolls where no control takes it', y1 < y0, f'{y0} -> {y1}')
+    for fonts, want in (('Arial', 'Arial'), ('.AppleSystemUIFont,Arial', '.AppleSystemUIFont'),
+                        ('Segoe UI,Arial', 'Segoe UI')):
+        _, _, logs = gfx_run(exe, out, 'hig_font', ['logframe'], env={'JSFX_FONTS': fonts})
+        faces = {' '.join(l.split()[3:]) for l in logs[0] if l.startswith('font ')}
+        fails += check(f'system font: given {fonts!r}, draws in {want}', faces == {want}, str(faces))
+
+    print('--- HIG: Reduce Motion holds the beat bar still')
+    def beat_bars(lines):
+        # the bar's fill: x 22 in the page, a rect drawn just after the dark trough at y 336
+        return [l for l in lines if l.startswith('rect 22.00 338.00')]
+    for rm in (0, 1):
+        _, _, logs = gfx_run(exe, out, f'hig_rm{rm}', [f'slider 102 {rm}', 'note 36 100', 'audio 0.3', 'logframe',
+                                                       'audio 0.17', 'logframe', 'audio 0.23', 'logframe'])
+        bars = [tuple(beat_bars(l)) for l in logs]
+        still = len(set(bars)) == 1 and all(bars)
+        fails += check(f'Reduce Motion {"on: the bar holds still" if rm else "off: the bar pulses with the beat"}',
+                       still == bool(rm), str([b[0][:60] if b else None for b in bars]))
+    _, _, logs = gfx_run(exe, out, 'hig_rmmenu', ['menu 6'] + click(898, 22) + ['dumpsliders'])
+    so, _, _ = gfx_run(exe, out, 'hig_rmmenu', ['menu 6'] + click(898, 22) + ['dumpsliders'])
+    fails += check('Options → Reduce Motion is remembered (slider 102)', sliders(so).get(102) == 1)
+    return fails
 
 
 def main():
@@ -190,16 +398,18 @@ def main():
     sc = os.path.join(a.out, 'pages.ui')
     with open(sc, 'w') as f:
         f.write('frame\n'
-                'mouse 395 66 1\nframe\nmouse 395 66 0\nframe\n'          # FX + MANGLE tab
-                'mouse 53 156 1\nframe\nmouse 53 96 1\nframe\nmouse 53 96 0\nframe\n'  # drag DRIVE up
-                'mouse 240 66 1\nframe\nmouse 240 66 0\nframe\n'          # MODULATION tab
-                'menu 2\nmouse 600 412 1\nframe\nmouse 600 412 0\nframe\n'  # slot 1 dest -> Cutoff
+                'mouse 395 70 1\nframe\nmouse 395 70 0\nframe\n'          # FX + MANGLE tab
+                'mouse 53 170 1\nframe\nmouse 53 110 1\nframe\nmouse 53 110 0\nframe\n'  # drag DRIVE up
+                'mouse 240 70 1\nframe\nmouse 240 70 0\nframe\n'          # MODULATION tab
+                'menu 2\nmouse 600 424 1\nframe\nmouse 600 424 0\nframe\n'  # slot 1 dest -> Cutoff
                 'logframe\ndumpsliders\n')
     r = subprocess.run([exe, 'gfx', '44100', sc, os.path.join(a.out, 'pages.log')], capture_output=True, text=True)
     vals = {int(l.split()[0][6:]): float(l.split()[2]) for l in r.stdout.split('\n') if l.startswith('slider')}
     ok = r.returncode == 0 and vals.get(48, 0) > 10 and vals.get(84) == 1
     fails += not ok
     print(f'  dist drive after drag {vals.get(48)}, mod 1 dest {vals.get(84)} {"OK" if ok else "FAIL"}')
+
+    fails += hig_tests(exe, a.out)
 
     print('--- silence after release')
     x, _ = render(exe, a.out, 'release', {}, [(0.0, 36, 100), (0.5, 36, 0)], secs=2)

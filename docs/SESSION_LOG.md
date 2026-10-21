@@ -121,3 +121,27 @@ Docs updated and a carry-over prompt written for the next session.
   more presets; keyboard shortcuts for the pages; `export_buffer_to_project` to bounce a Reese
   straight into the project.
 
+
+## Session 3 (2026-10-14): wording to Apple's writing guidelines (v1.1.1)
+
+The user asked for every app's text to follow Apple's writing guidelines (ADR-014). Text only:
+nothing about the sound, the layout or the sliders' numbers, order and ranges changed.
+
+- Title-style: the Mutate menu ("Mutate Engine", "Mutate Mangle and Movement", "Nudge All
+  (Subtle)"), slider names and enum labels ("Squash (Multiband)", "Cents (Tracks Pitch)"), the FX
+  description ("Reese Basser — Reese Bass Synthesizer").
+- Sentence case: subtitle, status ("Note 55.0 Hz", "Voice on · 2x oversampling"), every caption
+  under a control, the footer ("Drag to adjust · Shift-drag for fine control · Double-click or
+  Ctrl/Cmd-click to reset · Scroll to step"). "drag = adjust"-style shorthand written as words.
+- Typography: em dashes in the engine descriptions and "Init — Classic Dual Saw", curly
+  apostrophes and quotes ("Saunderson ’88 (CZ)", “Mod Env”), → in the signal flow and mod matrix.
+- Two real fixes found on the way: "Sample & Hold" showed as a mnemonic in the LFO shape menu
+  (`build_menu` now doubles `&`), and the list reader stopped at the first non-ASCII byte because
+  `str_getchar` is signed (loops now stop on `!= 0`). The harness had hidden the second: its
+  `str_getchar` was unsigned (now signed), and its C string literals used hex escapes that
+  swallowed the "88" after "’" (now octal).
+- Version 1.1.1 (header and footer). README presets and UI tips, and the three screenshots,
+  re-rendered.
+
+Verified: `tools/test_render.py` FAILURES: 0; all three pages rendered and looked at, nothing
+clipped; the preset box shows "Saunderson ’88 (CZ)"; the menus read as above.

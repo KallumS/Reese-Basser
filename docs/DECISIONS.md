@@ -149,3 +149,24 @@ globals @gfx writes and which @block/@sample/@slider write, and fails on any ove
 intended `ui_dirty` flag.
 **Consequences:** This class of race is caught before it ships. Reading audio variables from @gfx
 (scope, beat phase, f0) is still allowed, since those are display-only and may be slightly stale.
+
+## ADR-014: The window's text follows Apple's writing guidelines
+
+**Status:** accepted (session 3, 2026-10-14)
+**Context:** The user asked for every app's text to follow Apple's Human Interface Guidelines on
+writing (developer.apple.com/design/human-interface-guidelines/writing), as done for Noterator and
+Miderator (Noterator's decision 0053). The window mixed lower-case captions ("never reset",
+"route it in the mod matrix"), programmer shorthand ("drag = adjust", "->", "1x = light CPU"),
+" - " for dashes and straight quotes.
+**Decision:** Names, menu items, slider names and preset names in title-style capitalization, a verb
+first where they act ("Mutate Mangle and Movement", "Nudge All (Subtle)", "Squash (Multiband)").
+Captions, hints, the status line and descriptions in sentence case; complete sentences end with a
+full stop, fragments do not. Em dashes between phrases, curly quotes and apostrophes ("Saunderson
+’88 (CZ)", “Mod Env”), arrows in the signal flow. Modifier keys are spelled out in running text
+("Shift-drag", "Ctrl/Cmd-click"), since the plugin runs on Windows too. Panel titles, tabs and knob
+captions keep their capitals, a deliberate look; abbreviations that are there for width (RESO, UNI
+DET, Retrig) stay.
+**Consequences:** No slider renumbered, reordered or re-ranged; enum lists keep their order, only
+their words changed. Loops over strings stop on `!= 0`, because `str_getchar` is signed and the
+first byte of "—" reads below 0; the harness's `str_getchar` is signed now too, so it would catch
+that. Popup menus double `&`. New text follows the same rules; render the pages to check it fits.

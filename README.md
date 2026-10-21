@@ -148,8 +148,8 @@ velocity sensitivity, sustain pedal, and all-notes-off handling.
 
 Pick one from the preset box at the top (◀ ▶ step through them).
 
-1. **Init – Classic Dual Saw**
-2. **Saunderson '88 (CZ)**: dark, phase-distortion original
+1. **Init — Classic Dual Saw**
+2. **Saunderson ’88 (CZ)**: dark, phase-distortion original
 3. **Terrorist Jungle**: sampled-and-crushed jungle Reese with sub
 4. **Mutant Techstep**: pedal-overdriven, notch-swept (Trace / Ed Rush era)
 5. **Neuro Double Notch**: supersaw, sweeping notches, squash
@@ -190,9 +190,9 @@ The interface has three pages, chosen with the tabs under the title:
 |---|---|
 | ![Modulation page](docs/screenshot-modulation.png) | ![FX page](docs/screenshot-fx.png) |
 
-* **Drag** a knob up/down. **Shift+drag** for fine adjustment.
-* **Double-click** or **Ctrl/Cmd+click** resets to the default.
-* **Mouse wheel** steps a knob or cycles a dropdown.
+* **Drag** a knob up or down. **Shift-drag** for fine adjustment.
+* **Double-click** or **Ctrl/Cmd-click** resets to the default.
+* **Scroll** (the mouse wheel) steps a knob or cycles a dropdown.
 * The footer shows the full name and value of whatever is under the mouse.
 * **Oversampling** (SYNTH page, bottom right): 1x is lightest on CPU, 2x (default) is the
   best balance, 4x is cleanest for heavy distortion and sync.

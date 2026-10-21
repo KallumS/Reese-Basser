@@ -145,7 +145,7 @@ RF(str_getchar) {
   int L = (int)strlen(s), i = (int)a[1];
   if (i < 0) i += L;
   if (i < 0 || i >= L) return 0;
-  return (unsigned char)s[i];
+  return (signed char)s[i];   /* signed by default, as in REAPER: UTF-8 bytes read < 0 */
 }
 RF(str_setchar) {
   (void)n;

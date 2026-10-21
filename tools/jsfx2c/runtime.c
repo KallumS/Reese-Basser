@@ -76,7 +76,8 @@ RF(midisend) { (void)n; (void)a; return 1; }
 /* ---------------------------------------------------------------- sliders */
 static int n_automate, n_sliderchange;
 RF(slider_automate) { (void)n; (void)a; n_automate++; return 0; }
-RF(sliderchange) { (void)n; (void)a; n_sliderchange++; return 0; }
+/* sliderchange(-1) from @gfx is REAPER's "add an undo point"; logged so the tests can see it */
+RF(sliderchange) { n_sliderchange++; if (n == 1 && a[0] == -1) fprintf(stderr, "[undo point]\n"); return 0; }
 RF(slider_show) { (void)n; (void)a; return 1; }
 RF(memset) {
   (void)n;

@@ -237,3 +237,24 @@ chosen tab or switch told apart by colour alone.
   system really gave (on macOS especially); `mouse_hwheel` for sideways scrolling; how the
   canvas looks at 125%/150% with REAPER's font rasteriser. The harness measures text with
   Liberation Sans (Arial's metrics) plus 8% for wider system fonts.
+
+**Final sweep, 21 October 2026 (1.3).** Every guideline left on the Foundations pages was
+decided for this window (`docs/apple-hig-review.md`, *Final sweep*). Four changes:
+- **Edges 3:1.** Menus, switches, mod-amount bars, the preset box and the tabs share one edge
+  colour, `c_edge()` `#6D7581` (3.6–4.0:1 on every fill and ground; they were 1.6–2.4:1); a
+  button's coloured edge is drawn at 80% (MUTATE's pink was 2.7:1 on its own fill, now 3.8:1). Panel frames and the knob
+  track stay faint: they group or show a range and identify nothing.
+- **No flashing.** A beat faster than 3 Hz holds the beat bar still, as Reduce Motion does
+  (WCAG's three flashes a second); the still bar is at half strength, 3.7:1.
+- **Interface size fits the width.** A size the window is too narrow for is drawn as wide as the
+  window, never below 100%, so it scrolls up and down but not sideways. This amends the
+  decision above that a smaller window scrolls rather than shrinking: it still does, below 100%,
+  and vertically at any size; at 200% in the default window the whole width now shows. The
+  menu keeps the size chosen; a wider window brings it back.
+- **Undo for presets and Mutate.** The click adds a REAPER undo point (`sliderchange(-1)`), the
+  change is made in the next frame, then another point; Edit → Undo puts back the sound as it
+  was. Nothing asks first, because stepping through presets is the main use. A side effect:
+  REAPER's undo history shows two entries per preset or mutation.
+**Unverified in REAPER**: that `sliderchange(-1)` from `@gfx` adds the undo point (the JSFX
+reference says so; the harness only logs the call), and how two of them a frame apart appear
+in REAPER's undo history.

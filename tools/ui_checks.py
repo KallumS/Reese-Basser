@@ -12,6 +12,9 @@ the jsfx2c harness. Used by tools/test_render.py; can also be run on a log by ha
 - small_text(): no text smaller than a given size.
 - rings():     the keyboard focus rings drawn (#F2F4F7 rounded rectangles), grouped.
 - focus_list(): the plugin's focus list (ids, kinds and places) from a `dumpmem` of FOCUSL.
+- edges():     every framed control's edge at least 3:1 on the ground outside it, a button's on its fill too (the
+               non-text contrast Apple's Accessibility page asks of controls; WCAG 1.4.11).
+- arcs():      every knob's value arc at least 3:1 on its panel and on the track beside it.
 """
 import os
 import sys
@@ -161,6 +164,53 @@ def focus_list(stdout):
         out.append(tuple(mem[b + k] for k in range(6)))
         i += 1
     return out
+
+
+PANEL = (26, 29, 35)              # panel(): 0.105 0.115 0.14
+TRACK = (51, 56, 66)              # knob(): the track, 0.2 0.22 0.26
+FRAMED = (2, 3, 4, 5, 6, 7)       # menus, switches, bars, buttons, tabs, the preset box
+
+
+def pixel(img, x, y):
+    return img.getpixel((int(x), int(y)))[:3]
+
+
+def edges(lines, focus, need=3.0, scale=1.0):
+    """Framed controls whose edge (its top row, 3 in from the left) is under `need`:1 on what is
+    just outside it (a button: and on its own fill just inside). `focus` is focus_list(); places are logical, the window unscrolled."""
+    img = render_gfx.replay(lines)
+    bad = []
+    for fid, kind, x, y, w, h in focus:
+        if kind not in FRAMED:
+            continue
+        ex, ey = (x + 3) * scale, y * scale
+        edge, out, inside = pixel(img, ex, ey), pixel(img, ex, ey - 1), pixel(img, ex, ey + 1)
+        # a button's edge is its section's colour, so it must also stand off its own fill; the
+        # others' grey edge sits on a dark fill, or on a chosen segment's tint, which is itself
+        # the cue (and carries a bar)
+        r = min(ratio(edge, out), ratio(edge, inside)) if kind == 5 else ratio(edge, out)
+        if r < need:
+            bad.append((int(fid), round(r, 2), edge, out, inside))
+    return bad
+
+
+def arcs(lines, need=3.0):
+    """Knob value arcs (anything drawn with gfx_arc but the track and the focus ring) under
+    `need`:1 on the panel or on the track."""
+    bad, seen = [], 0
+    for ln in lines:
+        p = ln.split(' ')
+        if p[0] != 'arc':
+            continue
+        c = render_gfx.color(p[6:10])
+        if near(c[:3], TRACK):
+            continue
+        seen += 1
+        on_panel = _blend(c, PANEL)
+        worst = min(ratio(on_panel, PANEL), ratio(_blend(c, TRACK), TRACK))
+        if worst < need:
+            bad.append((c, round(worst, 2)))
+    return bad, seen
 
 
 def spacing(focus, gap=12):

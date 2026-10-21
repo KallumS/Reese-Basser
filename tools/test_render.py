@@ -17,7 +17,8 @@ import wave
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import ui_checks  # noqa: E402
+import ui_checks
+import render_gfx  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 H = os.path.join(ROOT, 'tools', 'jsfx2c')
@@ -175,6 +176,7 @@ def hig_tests(exe, out):
     fails += check('the help line is at the top', bool(top) and top[0]['y'] < 60)
 
     print('--- HIG: the keyboard alone (Tab, Shift+Tab, Return/Space, arrows, Delete, Esc)')
+    unfit = []
     for page, want in PAGE_STOPS.items():
         body = (click(*TAB_XY[page]) if page else []) + ['dumpmem 130000 1100']
         for k in range(want + 1):
@@ -182,6 +184,7 @@ def hig_tests(exe, out):
         so, _, logs = gfx_run(exe, out, f'hig_tab{page}', body)
         focus = ui_checks.focus_list(so)
         rings = [ui_checks.rings(l) for l in logs]
+        unfit += [(page,) + b for l in logs for b in ui_checks.fits(l)]
         one = all(len(r) == 1 for r in rings)
         fails += check(f'page {page}: {len(focus)} controls in the Tab order (expect {want}), one ring per press',
                        len(focus) == want and one, f'{len(focus)} controls, rings per press {[len(r) for r in rings]}')
@@ -211,6 +214,8 @@ def hig_tests(exe, out):
         fails += check(f'page {page}: every control at least 28 tall', not short, str(short[:4]))
         close = ui_checks.spacing(focus)
         fails += check(f'page {page}: controls at least 12 apart', not close, str(close[:6]))
+    fails += check('the help line names every focused control and its value without being cut short',
+                   not unfit, str(unfit[:4]))
     _, _, logs = gfx_run(exe, out, 'hig_stab', keys(TAB, shift=True) + ['logframe'])
     r = ui_checks.rings(logs[0])
     fails += check('Shift+Tab from nothing goes to the last control (Clipper)',
@@ -252,14 +257,21 @@ def hig_tests(exe, out):
     so, _, logs = gfx_run(exe, out, 'hig_opt', ['menu 4'] + click(898, 22) + ['logframe', 'dumpsliders'])
     s = sliders(so)
     fails += check('Options → Interface Size 200% is remembered (slider 101)', s.get(101) == 3, str(s.get(101)))
-    fails += check('200% in a 960 x 684 window: text twice the size, scroll bars shown',
-                   biggest_font(logs[0]) == 54 and len(scrollbars(logs[0])) == 2,
+    fails += check('200% in a 960 x 684 window: drawn as wide as the window (100%), no scroll bars (1.3)',
+                   biggest_font(logs[0]) == 27 and len(scrollbars(logs[0])) == 0,
                    f'font {biggest_font(logs[0])}, bars {len(scrollbars(logs[0]))}')
+    for label, size, want_font, want_bars in (
+            ('200% in a 1440 x 684 window: 150%, as wide as the window, scrolls up and down only', (1440, 684), 40.5, 1),
+            ('200% in a 1920 x 900 window: twice the size, scrolls up and down only', (1920, 900), 54, 1),
+            ('200% in a 2000 x 1500 window: grows past 200% to fit, no scroll bars', (2000, 1500), 27 * 2000 / 960, 0)):
+        _, _, logs = gfx_run(exe, out, 'hig_w', ['slider 101 3', 'logframe'], size=size)
+        f, b = biggest_font(logs[0]), len(scrollbars(logs[0]))
+        fails += check(label, abs(f - want_font) < 0.01 and b == want_bars, f'font {f}, bars {b}')
     body = ['slider 101 3'] + keys(*[TAB] * 40) + ['logframe']
-    _, _, logs = gfx_run(exe, out, 'hig_follow', body)
+    _, _, logs = gfx_run(exe, out, 'hig_follow', body, size=(1200, 684))
     r = ui_checks.rings(logs[0])
     fails += check('at 200% the focus scrolls into view (last control, bottom right)',
-                   len(r) == 1 and r[0][0] >= 0 and r[0][1] >= 0 and r[0][2] <= 960 and r[0][3] <= 684, str(r))
+                   len(r) == 1 and r[0][0] >= 0 and r[0][1] >= 0 and r[0][2] <= 1200 and r[0][3] <= 684, str(r))
     for label, body, size, env, want_font, want_bars in (
             ('Retina 2x at 100%: twice the size, no scroll bars', ['retina 2'], (1920, 1368), None, 54, 0),
             ('Retina 2x in a smaller window: still twice the size, scrolls', ['retina 2'], (1440, 1026), None, 54, 2),
@@ -294,6 +306,51 @@ def hig_tests(exe, out):
     _, _, logs = gfx_run(exe, out, 'hig_rmmenu', ['menu 6'] + click(898, 22) + ['dumpsliders'])
     so, _, _ = gfx_run(exe, out, 'hig_rmmenu', ['menu 6'] + click(898, 22) + ['dumpsliders'])
     fails += check('Options → Reduce Motion is remembered (slider 102)', sliders(so).get(102) == 1)
+
+    print('--- HIG final sweep (1.3): edges and arcs 3:1, menus in full, no flashing, undo')
+    for page in (0, 1, 2):
+        so, _, logs = gfx_run(exe, out, f'hig_e{page}', (click(*TAB_XY[page]) if page else [])
+                              + ['logframe', 'dumpmem 130000 1100'])
+        focus = ui_checks.focus_list(so)
+        framed = sum(1 for f in focus if f[1] in ui_checks.FRAMED)
+        bad = ui_checks.edges(logs[0], focus)
+        fails += check(f'page {page}: the edges of all {framed} menus, switches, bars, buttons and tabs 3:1 on the ground (a button’s on its fill too)',
+                       framed > 0 and not bad, str(bad[:4]))
+        bad, seen = ui_checks.arcs(logs[0])
+        fails += check(f'page {page}: {seen} knob value arcs 3:1 on the panel and on the track', seen > 0 and not bad,
+                       str(bad[:4]))
+    unfit = []
+    for sl, n, page in ((21, 6, 0), (35, 7, 1), (41, 7, 1), (47, 6, 2), (52, 4, 2), (83, 11, 1), (84, 25, 1)):
+        body = click(*TAB_XY[page]) if page else []
+        for v in range(n):
+            body += [f'slider {sl} {v}', 'logframe']
+        for lines in gfx_run(exe, out, f'hig_dd{sl}', body)[2]:
+            unfit += [(sl,) + b for b in ui_checks.fits(lines) if b[0] != 'FILTER OFF']
+    fails += check('every choice of every menu fits its box', not unfit, str(unfit[:4]))
+
+    def beat_bar(lines):
+        return [l for l in lines if l.startswith('rect 22.00 338.00')]
+    _, _, logs = gfx_run(exe, out, 'hig_flash', ['slider 3 1', 'slider 4 6', 'note 36 100', 'audio 0.3', 'logframe',
+                                                 'audio 0.04', 'logframe', 'audio 0.05', 'logframe'])
+    bars = [tuple(beat_bar(l)) for l in logs]
+    fails += check('a beat faster than 3 a second holds the bar still (no flashing)',
+                   len(set(bars)) == 1 and all(bars), str([b[0][:60] if b else None for b in bars]))
+    img = render_gfx.replay(logs[0])
+    bar, trough = ui_checks.pixel(img, 30, 340), ui_checks.pixel(img, 21, 340)
+    fails += check('the still beat bar 3:1 on its trough', ui_checks.ratio(bar, trough) >= 3,
+                   f'{ui_checks.ratio(bar, trough):.2f}')
+
+    def undos(se):
+        return se.count('[undo point]')
+    s0 = sliders(gfx_run(exe, out, 'hig_u0', ['dumpsliders'])[0])
+    for what, press, release in (('a preset (the > button)', ['mouse 598 22 1', 'frame'], ['mouse 598 22 0', 'frame']),
+                                 ('a mutation', ['menu 4', 'mouse 680 22 1', 'frame'], ['mouse 680 22 0', 'frame'])):
+        so1, se1, _ = gfx_run(exe, out, 'hig_u1', press + ['dumpsliders'])
+        so2, se2, _ = gfx_run(exe, out, 'hig_u2', press + release + ['dumpsliders'])
+        first = undos(se1) == 1 and sliders(so1) == s0
+        then = undos(se2) == 2 and sliders(so2) != s0
+        fails += check(f'{what}: an undo point before the sound changes and one after, so Undo puts it back',
+                       first and then, f'undo points {undos(se1)} then {undos(se2)}, changed first {sliders(so1) != s0}')
     return fails
 
 
@@ -301,10 +358,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=os.path.join(ROOT, 'build', 'test'))
     ap.add_argument('--quick', action='store_true')
+    ap.add_argument('--hig', action='store_true', help="only the window's checks (Apple's HIG)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     exe = build(a.out)
     fails = 0
+    if a.hig:
+        fails = hig_tests(exe, a.out)
+        print('FAILURES:', fails)
+        return 1 if fails else 0
 
     held = [(0.0, 36, 110), (1.9, 36, 0)]
     line = [(0.0, 36, 110), (0.45, 36, 0), (0.5, 39, 100), (0.8, 41, 90), (0.95, 39, 0),

@@ -1,7 +1,7 @@
 desc:Reese Basser — Reese Bass Synthesizer
 tags:instrument synthesizer bass reese
 //author: Reese Basser
-//version: 1.2
+//version: 1.3
 //
 // A monophonic synthesizer that only makes Reese basses, but makes them well.
 // Eight generation methods (engines), tempo-lockable beating, a Reese-focused
@@ -1030,6 +1030,9 @@ function inr(x, y, w, h) ( ui_mx >= x && ui_mx < x + w && ui_my >= y && ui_my < 
 function c_text() ( col(0.92, 0.94, 0.97, 1); );   // body text
 function c_sec() ( col(0.69, 0.714, 0.753, 1); );  // secondary text #B0B6C0
 function c_dis() ( col(0.35, 0.37, 0.42, 1); );    // disabled labels only
+// Edges of controls and marks that carry meaning: #6D7581, 3.6:1 or more on every fill and
+// ground here (Apple's Accessibility page; WCAG's 3:1 for non-text). Hover lights them.
+function c_edge() ( col(0.427, 0.459, 0.506, 1); );
 function lin(c) ( c <= 0.04045 ? c/12.92 : ((c + 0.055)/1.055)^2.4; );
 function lum(r, g, b) ( 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b); );
 PANEL_L = lum(0.105, 0.115, 0.14);
@@ -1086,6 +1089,9 @@ function key_value(i) (
   );
 );
 function key_press(id) ( ui_focus == id && key_is(13, 32) ? ( ui_key = 0; 1; ) : 0; );
+
+// a preset (p, 1-based) or a mutation (m, 1-based) is made next frame, with an undo point either side
+function ask_change(p, m) ( sliderchange(-1); ui_want_preset = p; ui_want_mutate = m; );
 
 // ---------------------------------------------------------------- mouse bookkeeping
 function begin_widget(i, hit) (
@@ -1162,7 +1168,7 @@ function dropdown(i, x, y, w, h) local(hit, old, foc) (
     key_is(13, 32) ? ( ui_open = i; ui_key = 0; );
   );
   col(0.07, 0.075, 0.09, 1); RF(x, y, w, h);
-  col(hit ? acr : 0.3, hit ? acg : 0.33, hit ? acb : 0.38, 1); RO(x, y, w, h);
+  hit ? col(acr, acg, acb, 1) : c_edge(); RO(x, y, w, h);
   font(5); c_text();
   TX(list_item(#dd, PENUM[i], slider(i)), x + 6, y, w - 20, h, 4);
   col(acr, acg, acb, 1);
@@ -1197,7 +1203,7 @@ function segs(i, x, y, w, h) local(n, j, sw, hit, on, foc, v) (
     on ? col(acr*0.35, acg*0.35, acb*0.35, 1) : col(0.07, 0.075, 0.09, 1);
     RF(x + j*sw, y, sw, h);
     on ? ( col(acr, acg, acb, 1); RF(x + j*sw + 1, y + h - 4, sw - 2, 3); );
-    col(0.25, 0.27, 0.32, 1); RO(x + j*sw, y, sw, h);
+    c_edge(); RO(x + j*sw, y, sw, h);
     font(6); on || hit ? col(1, 1, 1, 1) : c_sec();
     TX(list_item(#sg, PENUM[i], j), x + j*sw, y, sw, h, 5);
     hit && ui_click ? ( p_set(i, j); ui_click = 0; );
@@ -1221,8 +1227,8 @@ function hbar(i, x, y, w, h) local(hit, n, cx, ex, foc) (
   col(acr, acg, acb, 0.4);
   n >= 0.5 ? RF(cx, y + 2, (n - 0.5)*w, h - 4) : RF(ex, y + 2, (0.5 - n)*w, h - 4);
   abs(n - 0.5) > 0.004 ? ( col(acr, acg, acb, 1); RF(n >= 0.5 ? ex - 2 : ex, y + 2, 2, h - 4); );
-  col(0.35, 0.37, 0.42, 1); LN(cx, y, cx, y + h);
-  col(hit || ui_drag == i ? acr : 0.25, hit || ui_drag == i ? acg : 0.27, hit || ui_drag == i ? acb : 0.32, 1); RO(x, y, w, h);
+  c_edge(); LN(cx, y, cx, y + h);
+  hit || ui_drag == i ? col(acr, acg, acb, 1) : c_edge(); RO(x, y, w, h);
   font(6); c_text(); TX(fmt_val(#hb, i), x, y, w, h, 5);
   foc ? focus_ring(x, y, w, h);
 );
@@ -1232,7 +1238,7 @@ function button(id, str, hint, x, y, w, h) local(hit, foc) (
   foc = focusable(id, 5, x, y, w, h);
   hit || foc ? ui_hint = hint;
   col(hit ? 0.2 : 0.13, hit ? 0.22 : 0.145, hit ? 0.26 : 0.17, 1); RF(x, y, w, h);
-  col(acr, acg, acb, hit ? 1 : 0.6); RO(x, y, w, h);
+  col(acr, acg, acb, hit ? 1 : 0.8); RO(x, y, w, h);
   font(3); c_text(); TX(str, x, y, w, h, 5);
   foc ? focus_ring(x, y, w, h);
   (hit && ui_click) || key_press(id) ? ( ui_click = 0; 1; ) : 0;
@@ -1876,15 +1882,17 @@ ui_f0 = f0; ui_beat = beat_eff; ui_fc = fc;
 // NOTE: @gfx runs in its own thread - only use ui_* globals (or function locals) here, never
 // variables the audio code writes (the transpiler rejects shared writes).
 // The canvas grows with the window. Interface size sets the smallest it may be drawn (Retina
-// included): a window smaller than that scrolls rather than shrinking the text (ADR-015).
-// "Fit to Window", and the tiny view embedded in a track panel, shrink it to fit as before.
+// included), as long as the window is wide enough: a narrower window draws it as wide as the
+// window, never below 100%, so it scrolls up and down but not sideways (1.3). Only below 100%
+// does a window scroll both ways (ADR-015). "Fit to Window", and the tiny view embedded in a
+// track panel, shrink it to fit as before.
 UI_W = 960; UI_H = 684;
 ui_key = gfx_getchar();   // one key per frame; also makes mouse_cap report Ctrl/Shift
 !ui_font_ok ? pick_font();
 ui_retina = max(1, gfx_ext_retina);
 ui_zoom = iface_size == 1 ? 1.25 : iface_size == 2 ? 1.5 : iface_size == 3 ? 2 : 1;
 ui_fit = min(gfx_w/UI_W, gfx_h/UI_H);
-ui_min = (iface_size == 4 || (gfx_ext_flags & 1)) ? 0 : ui_retina*ui_zoom;
+ui_min = (iface_size == 4 || (gfx_ext_flags & 1)) ? 0 : max(ui_retina, min(ui_retina*ui_zoom, gfx_w/UI_W));
 ui_s = max(ui_fit, ui_min);
 ui_s <= 0 ? ui_s = 1;
 ui_s != ui_last_s ? ( setup_fonts(ui_s); ui_last_s = ui_s; );
@@ -1916,6 +1924,13 @@ ui_mx = (mouse_x - ui_ox)/ui_s; ui_my = (mouse_y - ui_oy)/ui_s;
 (ui_onsb || ui_sbdrag) ? ( ui_mx = -10000; ui_my = -10000; );
 ui_click ? ui_focus = 0;   // pointing takes over from the keyboard
 ui_hov = 0; ui_hint = 0; ui_fn = 0; ui_ty = 0;
+// A preset or a mutation replaces the sound. The frame that asks for it adds an undo point
+// (sliderchange(-1) from @gfx), this one makes the change and adds another, so REAPER's
+// Edit → Undo puts back the sound as it was, knob tweaks included (1.3).
+ui_want_preset || ui_want_mutate ? (
+  ui_want_preset ? ( load_preset(ui_want_preset - 1); preset_loaded_once = 1; ) : mutate(ui_want_mutate - 1);
+  sliderchange(-1); ui_want_preset = 0; ui_want_mutate = 0;
+);
 
 col(0.075, 0.08, 0.095, 1); gfx_rect(0, 0, gfx_w, gfx_h);
 
@@ -1927,12 +1942,12 @@ accent(0.24, 0.9, 0.76);
 font(4); col(0.95, 0.97, 1, 1); TX("REESE", 14, 6, 100, 30, 4);
 col(atr, atg, atb, 1); TX("BASSER", 118, 6, 130, 30, 4);
 // preset selector
-button(201, "<", "Previous preset.", 262, 8, 28, 28) ? ( load_preset(cur_preset > 0 ? cur_preset - 1 : NUM_PRESETS - 1); preset_loaded_once = 1; );
+button(201, "<", "Previous preset. Edit → Undo puts your sound back.", 262, 8, 28, 28) ? ask_change(1 + (cur_preset > 0 ? cur_preset - 1 : NUM_PRESETS - 1), 0);
 ui_pfoc = focusable(202, 7, 302, 8, 270, 28);
 ui_phit = inr(302, 8, 270, 28);
-(ui_phit || ui_pfoc) ? ui_hint = "Preset: click, or press Return, to choose one.";
+(ui_phit || ui_pfoc) ? ui_hint = "Preset: click, or press Return, to choose one. Edit → Undo puts your sound back.";
 col(0.07, 0.075, 0.09, 1); RF(302, 8, 270, 28);
-col(ui_phit ? acr : 0.25, ui_phit ? acg : 0.27, ui_phit ? acb : 0.32, 1); RO(302, 8, 270, 28);
+ui_phit ? col(acr, acg, acb, 1) : c_edge(); RO(302, 8, 270, 28);
 font(5); c_text();
 list_item(#pn, PRESETS, cur_preset);
 preset_edited ? strcat(#pn, " *");
@@ -1941,21 +1956,21 @@ TX(#pn, 302, 8, 270, 28, 5);
 (ui_phit && ui_click) || key_press(202) ? (
   gfx_x = ui_ox + 302*ui_s; gfx_y = ui_oy + 36*ui_s;
   ui_res = gfx_showmenu(build_menu(#menu, PRESETS, preset_loaded_once ? cur_preset : -1));
-  ui_res > 0 ? ( load_preset(ui_res - 1); preset_loaded_once = 1; );
+  ui_res > 0 ? ask_change(ui_res, 0);
   ui_click = 0;
 );
 ui_pfoc ? focus_ring(302, 8, 270, 28);
-button(203, ">", "Next preset.", 584, 8, 28, 28) ? ( load_preset(cur_preset < NUM_PRESETS - 1 ? cur_preset + 1 : 0); preset_loaded_once = 1; );
+button(203, ">", "Next preset. Edit → Undo puts your sound back.", 584, 8, 28, 28) ? ask_change(1 + (cur_preset < NUM_PRESETS - 1 ? cur_preset + 1 : 0), 0);
 accent(1.0, 0.35, 0.55);
-button(204, "MUTATE", "Mutate: randomise part of the sound for happy accidents.", 624, 8, 110, 28) ? (
+button(204, "MUTATE", "Mutate: randomise part of the sound for happy accidents. Edit → Undo puts it back.", 624, 8, 110, 28) ? (
   gfx_x = ui_ox + 624*ui_s; gfx_y = ui_oy + 36*ui_s;
   ui_res = gfx_showmenu("Mutate Engine|Mutate Mangle and Movement|Mutate Modulation|Mutate Everything||Nudge All (Subtle)");
-  ui_res > 0 ? mutate(ui_res - 1);
+  ui_res > 0 ? ask_change(0, ui_res);
 );
 accent(0.8, 0.82, 0.86);
-button(205, "Options", "Options: interface size and reduced motion.", 848, 8, 100, 28) ? (
+button(205, "Options", "Options: interface size and reduced motion. A larger size needs a wider window.", 848, 8, 100, 28) ? (
   gfx_x = ui_ox + 848*ui_s; gfx_y = ui_oy + 36*ui_s;
-  sprintf(#om, "%sInterface Size 100%%|%sInterface Size 125%%|%sInterface Size 150%%|%sInterface Size 200%%|%sFit Interface to Window||%sReduce Motion||#Reese Basser 1.2",
+  sprintf(#om, "%sInterface Size 100%%|%sInterface Size 125%%|%sInterface Size 150%%|%sInterface Size 200%%|%sFit Interface to Window||%sReduce Motion||#Reese Basser 1.3",
           iface_size == 0 ? "!" : "", iface_size == 1 ? "!" : "", iface_size == 2 ? "!" : "",
           iface_size == 3 ? "!" : "", iface_size == 4 ? "!" : "", reduce_motion ? "!" : "");
   ui_res = gfx_showmenu(#om);
@@ -1974,7 +1989,7 @@ function tab(str, x, w, page) local(hit, on, foc) (
   on ? col(acr*0.35, acg*0.35, acb*0.35, 1) : col(hit ? 0.15 : 0.11, hit ? 0.165 : 0.12, hit ? 0.2 : 0.145, 1);
   RF(x, 64, w, 28);
   on ? ( col(acr, acg, acb, 1); RF(x, 88, w, 4); ) : ( col(acr, acg, acb, 0.6); RF(x, 91, w, 1); );
-  col(0.22, 0.24, 0.28, 1); RO(x, 64, w, 28);
+  c_edge(); RO(x, 64, w, 28);
   font(3); on || hit ? col(1, 1, 1, 1) : c_sec(); TX(str, x, 64, w, 28, 5);
   foc ? focus_ring(x, 64, w, 28);
   (hit && ui_click) || key_press(300 + page) ? ( ui_page = page; ui_click = 0; );
@@ -2025,10 +2040,12 @@ ui_page == 0 ? (
   knob(79, 522, 232, "OCTAVE");
   small_caption("BEAT (THE REESE THROB)", 20, 308, 580);
   col(0.07, 0.075, 0.09, 1); RF(20, 326, 580, 28);
-  // the bar pulses with the real beat; Reduce Motion holds it still
-  ui_bv = reduce_motion ? 1 : 0.5 + 0.5*cos(2*$pi*beat_ph);
-  col(acr, acg, acb, reduce_motion ? 0.35 : 0.25 + 0.6*ui_bv); RF(22, 328, 576*ui_bv, 24);
-  col(0.25, 0.27, 0.32, 1); RO(20, 326, 580, 28);
+  // the bar pulses with the real beat. Reduce Motion holds it still, and so does a beat faster
+  // than 3 a second: more would be flashing (Apple's Accessibility page; WCAG's three flashes).
+  ui_still = reduce_motion || abs(ui_beat) > 3;
+  ui_bv = ui_still ? 1 : 0.5 + 0.5*cos(2*$pi*beat_ph);
+  col(acr, acg, acb, ui_still ? 0.5 : 0.25 + 0.6*ui_bv); RF(22, 328, 576*ui_bv, 24);
+  c_edge(); RO(20, 326, 580, 28);
   font(5);
   sprintf(#bt, "%.2f Hz (one throb every %.2f s)", abs(ui_beat), 1/max(abs(ui_beat), 0.001));
   // the reading sits on its own dark plate, so it stays legible however bright the bar is

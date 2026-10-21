@@ -215,3 +215,54 @@ by REAPER is no different from what the user has already run.
   passes (FAILURES: 0).
 - Ask the user, when they try it: does Tab move the white ring, do the arrows turn a knob, does
   the text look like their system's font, and does Options → Interface Size behave as described.
+
+## Session 5 (2026-10-21): the final sweep of Apple's HIG Foundations (v1.3)
+
+Every guideline left on the Foundations pages was taken back to its page and decided for this
+window; the verdicts are in `docs/apple-hig-review.md` (*Final sweep*), the reasons in ADR-015's
+dated note. Done after AutoCC's sweep (its commit `9773580`), doing the equivalent here.
+
+**Measured first** (WCAG ratios at 100%): the edges of menus, switches, mod-amount bars and the
+preset box were 1.7–2.4:1 on what is around them, the tabs' 1.6:1 (their fill is 1.1:1 off the
+ground, so the edge is all that shows a tab); MUTATE's pink edge 2.7:1 on its own fill. The
+knob arcs (4.4:1 or more on the panel, 3.1:1 or more on the track) and the scroll bar (4.0:1)
+already passed. The beat bar pulsed at the beat's own rate, which Beat Hz lets reach 20 a second.
+
+**Changed**
+- `c_edge()` `#6D7581` for every framed control's edge and the mod bar's zero mark; buttons'
+  coloured edges at 80%.
+- A beat faster than 3 Hz holds the beat bar still; the still bar at half strength (3.7:1).
+- The interface size fits the window's width, never below 100%: no sideways scrolling unless
+  the window is narrower than 960 points. The Options hint says a larger size needs a wider
+  window.
+- A preset (menu, < or >) or a mutation goes through `ask_change()`: an undo point on the click,
+  the change and a second undo point the next frame. The hints say Edit → Undo puts the sound
+  back.
+- The harness logs `sliderchange(-1)` as `[undo point]`; `test_render.py --hig` runs only the
+  window's checks (2½ minutes).
+
+**Checked by** ten new checks (`ui_checks.edges()` and `arcs()`, the help line for all 120 Tab
+stops, every choice of seven menus, the flash and the still bar, four window widths at 200%, the
+undo points for a preset and a mutation). Twelve sabotages, each in a scratch copy of the repo
+(batch in the session scratchpad), running the window's checks. Eleven bit at once. One did not:
+- *MUTATE's edge back at 60%*: my estimate of 2.9:1 had blended it over the window's ground,
+  but it is drawn over the button's own fill, which lifts it to 3.2:1 outside — it passed. It is
+  2.7:1 against the fill inside, so `edges()` now also measures a button's edge against its own
+  fill (not the switches': a chosen segment's tint is itself the cue, with its bar), and then it
+  bites.
+
+**Looked at**: all three pages at 100% and 200% in a 1200-point window scrolled to a focused
+control. The three README screenshots were re-rendered (the edges now show).
+
+**Not verified, only REAPER can say**: that `sliderchange(-1)` from `@gfx` adds an undo point,
+and what two of them a frame apart look like in REAPER's undo history; how the width-fitted
+interface looks when the FX window is resized; everything still open from session 4 (keys,
+the system font, 125%/150%).
+
+## Current status (end of session 5)
+
+- **v1.3 on `ccr-f2d9adc9-lanc9o`** (with 1.1.1 and 1.2), not yet run in REAPER.
+  `tools/test_render.py` passes (FAILURES: 0).
+- Ask the user, when they try it: after choosing a preset or a mutation, does Edit → Undo bring
+  the old sound back in one step (or two)? At 200%, does the window fill its width without
+  scrolling sideways? Plus session 4's questions (Tab, arrows, the font, Interface Size).

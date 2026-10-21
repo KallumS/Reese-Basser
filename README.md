@@ -173,7 +173,8 @@ Pick one from the preset box at the top (◀ ▶ step through them).
 **MUTATE** randomises the engine, the mangle and movement sections, the
 modulation, or everything, within musical ranges. **Nudge** makes small
 random changes to the current sound. Mutating from a preset you like is a
-quick way to find variations. Your own sounds save with the project, and
+quick way to find variations. Changed your mind? REAPER's **Edit → Undo** puts back the sound
+you had before a preset or a mutation, tweaks included. Your own sounds save with the project, and
 REAPER's preset menu (the "+" button in the FX window) can store them as user presets.
 
 ---
@@ -219,15 +220,17 @@ so playing and REAPER's own shortcuts keep working as you expect.
 
 The **Options** button (top right) has:
 
-* **Interface Size 100%, 125%, 150%, 200%**: the smallest the window's contents may be drawn.
-  Make the window larger and everything still grows with it; make it smaller than the size
-  chosen and it scrolls (scroll bars, the mouse wheel, and the keyboard focus scrolls itself
-  into view) instead of shrinking the text. On a Retina screen 100% is already drawn sharp at
-  twice the pixels.
+* **Interface Size 100%, 125%, 150%, 200%**: how large the window's contents are drawn. Make
+  the window larger and everything still grows with it. A larger size needs a wider window: in
+  a narrower one the contents are drawn as wide as the window (never below 100%) and scroll up
+  and down, never sideways. Below 100% the window scrolls both ways (scroll bars, the mouse
+  wheel, and the keyboard focus scrolls itself into view) instead of shrinking the text. On a
+  Retina screen 100% is already drawn sharp at twice the pixels.
 * **Fit Interface to Window**: the way it used to be — always shrinks to fit, however small.
   Useful in a small docker. (The tiny view embedded in a track panel always fits.)
 * **Reduce Motion**: holds the pulsing beat bar still. The scopes keep showing the sound,
-  because that is information rather than decoration.
+  because that is information rather than decoration. A beat faster than three a second holds
+  the bar still anyway, so it never flashes.
 
 Both are saved with the project, like any parameter (as *Interface Size* and *Reduce Motion*,
 parameters 101 and 102). They are also stored in a REAPER preset you save, and the built-in

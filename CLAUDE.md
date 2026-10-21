@@ -5,9 +5,10 @@ A REAPER instrument that only makes Reese basses. It is a single JSFX file
 **REAPER 6.74+** (102 parameters, slider shaping, `tags:instrument`).
 
 **Status:** v1.1 is owner-tested and working in REAPER (macOS): a paged UI (SYNTH / MODULATION /
-FX + MANGLE), 8 engines, 20 presets. v1.1.1 (wording, ADR-014) and **v1.2 (Apple's HIG Foundations,
-ADR-015: 7:1 text, interface size, the keyboard alone, system font) are on `ccr-f2d9adc9-lanc9o` and
-not yet run in REAPER.** See "Current status" at the end of `docs/SESSION_LOG.md`.
+FX + MANGLE), 8 engines, 20 presets. v1.1.1 (wording, ADR-014), **v1.2 (Apple's HIG Foundations,
+ADR-015: 7:1 text, interface size, the keyboard alone, system font) and v1.3 (the final sweep: 3:1
+edges, no flashing, the interface fits the width, Undo for presets and Mutate) are on
+`ccr-f2d9adc9-lanc9o` and not yet run in REAPER.** See "Current status" at the end of `docs/SESSION_LOG.md`.
 
 Read first: `docs/JSFX_NOTES.md` (verified language/API facts; they have already
 caused real bugs), `docs/DECISIONS.md` (why things are the way they are),
@@ -33,7 +34,7 @@ tools/make_demo.py        renders all presets on a DnB riff -> build/demo/*.wav|
 
 ```bash
 pip install numpy                        # matplotlib/lameenc optional (plots / mp3 demo)
-python3 tools/test_render.py             # full suite (~3 min); --quick for 1x speed
+python3 tools/test_render.py             # full suite (~3 min); --quick for 1x speed; --hig the window only
 python3 tools/make_demo.py               # demo audio into build/demo/
 # transpile only (catches syntax errors, case clashes, define-before-use, arg counts):
 python3 tools/jsfx2c/jsfx2c.py ReeseBasser.jsfx /tmp/rb.c
@@ -82,7 +83,13 @@ so **run the test suite before every push**, and render a UI PNG after any `@gfx
   - buttons, menus, switches, bars 28 tall and ≥ 12 apart (knobs: their own 56×72 target);
   - a chosen state needs a second cue besides colour (the bars on switches and tabs);
   - nothing important at the bottom edge; no message on a timer; new animation obeys
-    `reduce_motion`. Add the new control to `PAGE_STOPS` in `tools/test_render.py`.
+    `reduce_motion`, and holds still if it would flash more than 3 times a second. Add the new
+    control to `PAGE_STOPS` in `tools/test_render.py`;
+  - (1.3) the edge of a framed control is `c_edge()` (#6D7581, 3:1 on every fill and ground) or,
+    hovered, the section's colour; a mark that carries meaning is 3:1 on what it sits on
+    (`ui_checks.edges()`/`arcs()` check them);
+  - (1.3) anything that replaces the sound (a preset, a mutation) goes through `ask_change()`,
+    which adds a REAPER undo point before and after, so Edit → Undo puts the sound back.
 - Memory index = `floor(v + 0.00001)`; `%` works on absolute integer values; `x == y` means |x−y| < 1e-5.
 
 ## Code map (search for these banners)
@@ -100,7 +107,7 @@ so **run the test suite before every push**, and render a UI PNG after any `@gfx
   → DC block → VCA → formant → ring → shift → crush → movement → squash → low cut → chorus → width
   → mono-bass → + sub → pan/volume/clipper → scope buffers.
 - `@gfx 960 684`: immediate-mode UI on a 960×684 logical canvas scaled to the window
-  (`ui_s`, `ui_ox/oy`), never below the interface size × `gfx_ext_retina` (then it scrolls:
+  (`ui_s`, `ui_ox/oy`), never below the interface size × `gfx_ext_retina` or, if the window is narrower than that, its width (never below 100%) (then it scrolls:
   `ui_sx/ui_sy`, scroll bars), with 3 pages chosen by `ui_page` (0 SYNTH, 1 MODULATION, 2 FX +
   MANGLE). Header row 1 (y 8): name, presets, MUTATE, Options; row 2 (y 44): the help line and
   readout; tabs at y 64. Pages are drawn 10 below their own coordinates (`ui_ty`).
@@ -132,7 +139,7 @@ defaults in ENGDEF), cutoff=22, quality=80 (oversampling), volume=81, mod matrix
   (~−14.5 dB RMS on the test riff; `test_render.py` prints each preset's level).
 - Performance matters (EEL2 JIT is slower than the C harness): avoid per-sample `log`/`pow` when a
   value can be computed in `update_params()`, and prefer instance variables over memory in hot loops.
-- Branches: 1.1 was developed on `claude/reese-bass-plugin-fvsdw1` (merged); 1.1.1 and 1.2 are on
+- Branches: 1.1 was developed on `claude/reese-bass-plugin-fvsdw1` (merged); 1.1.1, 1.2 and 1.3 are on
   `ccr-f2d9adc9-lanc9o`. Commit messages are descriptive; no PR unless asked.
 - Never commit Apple's guideline pages: they are Apple's copyrighted text. Refer to them by page.
 - Don't commit Cockos documentation verbatim. Summarise verified facts in docs/JSFX_NOTES.md instead.

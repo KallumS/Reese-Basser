@@ -11,11 +11,20 @@
  *                 wheel <delta>
  *                 menu <result>           result returned by the next gfx_showmenu
  *                 frame                   run @gfx once (log only the last frame)
+ *                 logframe [path]         run @gfx once and log it (to path, else the log file)
  *                 size <w> <h>            window size
+ *                 key <code>              queue a key for gfx_getchar() (one per call;
+ *                                         set Shift etc. with "mouse ... <cap>")
+ *                 retina <v>              gfx_ext_retina as REAPER would set it (2 = Retina)
+ *                 extflags <v>            gfx_ext_flags (1 = embedded in the TCP/MCP)
  *                 dumpsliders             print slider values
+ *                 dumpmem <addr> <n>      print memory slots addr..addr+n-1
+ * Fonts: JSFX_FONTS (comma separated, default "Arial") lists the faces the "system" has;
+ * gfx_getfont(#s) gives back the face asked for if it is there, else "Arial".
  */
 #include "runtime.h"
 #include <time.h>
+#include <ctype.h>
 
 double SL[257];
 static double *MEM;
@@ -67,7 +76,8 @@ RF(midisend) { (void)n; (void)a; return 1; }
 /* ---------------------------------------------------------------- sliders */
 static int n_automate, n_sliderchange;
 RF(slider_automate) { (void)n; (void)a; n_automate++; return 0; }
-RF(sliderchange) { (void)n; (void)a; n_sliderchange++; return 0; }
+/* sliderchange(-1) from @gfx is REAPER's "add an undo point"; logged so the tests can see it */
+RF(sliderchange) { n_sliderchange++; if (n == 1 && a[0] == -1) fprintf(stderr, "[undo point]\n"); return 0; }
 RF(slider_show) { (void)n; (void)a; return 1; }
 RF(memset) {
   (void)n;
@@ -195,7 +205,31 @@ RF(printf) {
   fputs(tmp, stderr);
   return 0;
 }
-RF(match) { (void)n; (void)a; die("match() not supported"); return 0; }
+/* match/matchi: the wildcards *, ? and + of the JSFX reference; % formats are not supported */
+static int wild(const char *p, const char *s, int ci) {
+  for (;;) {
+    if (*p == 0) return *s == 0;
+    if (*p == '%') die("match(): % formats not supported by the harness");
+    if (*p == '*' || *p == '+') {
+      int need = *p == '+';
+      p++;
+      if (*p == '?') p++;   /* lazy forms behave the same for a yes/no answer */
+      for (const char *t = s + need; ; t++) {
+        if (wild(p, t, ci)) return 1;
+        if (*t == 0) return 0;
+      }
+    }
+    if (*s == 0) return 0;
+    if (*p != '?') {
+      int a = (unsigned char)*p, b = (unsigned char)*s;
+      if (ci && a < 128 && b < 128) { a = tolower(a); b = tolower(b); }
+      if (a != b) return 0;
+    }
+    p++; s++;
+  }
+}
+RF(match) { if (n > 2) die("match(): output variables not supported"); return wild(strp(a[0]), strp(a[1]), 0); }
+RF(matchi) { if (n > 2) die("matchi(): output variables not supported"); return wild(strp(a[0]), strp(a[1]), 1); }
 
 /* ---------------------------------------------------------------- gfx log */
 static FILE *glog;
@@ -253,14 +287,34 @@ RF(gfx_gradrect) {
 }
 static double char_w(void) { return font_size * 0.55; }
 static double font_sizes[32], font_flags[32];
+static char font_face[32][128];
+static int font_cur;
+static int font_available(const char *face) {
+  const char *list = getenv("JSFX_FONTS");
+  char buf[1024];
+  snprintf(buf, sizeof buf, "%s", list ? list : "Arial");
+  for (char *t = strtok(buf, ","); t; t = strtok(NULL, ","))
+    if (!strcasecmp(t, face)) return 1;
+  return 0;
+}
 RF(gfx_setfont) {
   int idx = n >= 1 ? (int)a[0] : 0;
   if (idx < 0 || idx > 31) idx = 0;
-  if (n >= 3) { font_sizes[idx] = a[2]; font_flags[idx] = n >= 4 ? a[3] : 0; }
+  if (n >= 3) {
+    font_sizes[idx] = a[2]; font_flags[idx] = n >= 4 ? a[3] : 0;
+    const char *face = strp(a[1]);
+    /* a face the system does not have comes back as a substitute */
+    snprintf(font_face[idx], sizeof font_face[idx], "%s", font_available(face) ? face : "Arial");
+  }
+  font_cur = idx;
   font_size = idx == 0 ? 12 : (font_sizes[idx] > 0 ? font_sizes[idx] : 12);
   v_gfx_texth = font_size;
-  GL("font %.2f %d\n", font_size, (int)font_flags[idx]);
+  GL("font %.2f %d %s\n", font_size, (int)font_flags[idx], font_face[idx][0] ? font_face[idx] : "Arial");
   return 0;
+}
+RF(gfx_getfont) {
+  if (n >= 1) strcpy(strw(a[0]), font_face[font_cur][0] ? font_face[font_cur] : "Arial");
+  return font_cur;
 }
 double r_gfx_measurestr(double s, double *w, double *h) {
   *w = strlen(strp(s)) * char_w();
@@ -298,7 +352,14 @@ RF(gfx_showmenu) {
   menu_result = 0;
   return r;
 }
-RF(gfx_getchar) { (void)n; (void)a; return 0; }
+static double keyq[256];
+static int keyq_n, keyq_pos;
+RF(gfx_getchar) {
+  if (n >= 1 && a[0] != 0) return 0;   /* "is this key down" queries: nothing is held */
+  if (keyq_pos < keyq_n) return keyq[keyq_pos++];
+  keyq_n = keyq_pos = 0;
+  return 0;
+}
 RF(gfx_setcursor) { (void)n; (void)a; return 0; }
 
 /* ---------------------------------------------------------------- driver */
@@ -452,11 +513,22 @@ int main(int argc, char **argv) {
         v_mouse_wheel += x;
       } else if (!strcmp(cmd, "menu")) {
         menu_result = x;
+      } else if (!strcmp(cmd, "key")) {
+        if (keyq_n < 256) keyq[keyq_n++] = x;
+      } else if (!strcmp(cmd, "retina")) {
+        v_gfx_ext_retina = x;
+      } else if (!strcmp(cmd, "extflags")) {
+        v_gfx_ext_flags = x;
+      } else if (!strcmp(cmd, "dumpmem")) {
+        for (int i = 0; i < (int)y; i++) printf("mem %d = %.17g\n", (int)x + i, *memp(x + i));
       } else if (!strcmp(cmd, "size")) {
         v_gfx_w = x; v_gfx_h = y;
       } else if (!strcmp(cmd, "frame") || !strcmp(cmd, "logframe")) {
         int log = !strcmp(cmd, "logframe");
-        if (log) { fclose(glog); glog = fopen(argv[4], "w"); fprintf(glog, "size %g %g\n", v_gfx_w, v_gfx_h); }
+        char lpath[256];
+        /* "logframe <path>" logs this frame to its own file */
+        if (log && sscanf(line, "%*s %255s", lpath) != 1) snprintf(lpath, sizeof lpath, "%s", argv[4]);
+        if (log) { fclose(glog); glog = fopen(lpath, "w"); fprintf(glog, "size %g %g\n", v_gfx_w, v_gfx_h); }
         gfx_logging = log;
         v_gfx_x = v_gfx_y = 0;
         sec_gfx();

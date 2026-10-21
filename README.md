@@ -19,16 +19,17 @@ and Linux with nothing to compile. You can open it in REAPER's editor and change
    **JS: Reese Basser - Reese bass synthesizer**; it is listed under **Instruments**.
 4. Arm the track for MIDI input, or draw MIDI items, and play.
 
-Requires **REAPER 6.74 or newer** (the plugin has 100 automatable parameters
+Requires **REAPER 6.74 or newer** (the plugin has 102 automatable parameters
 and uses slider shaping). REAPER 7 is recommended.
 
 Every control is a normal REAPER parameter, so automation, REAPER's own **Parameter
 Modulation** (LFO / audio follower / MIDI link) and **FX Parameter MIDI Learn** work on all of them.
 
-The custom UI scales to any window size. The 100 parameters are hidden from REAPER's
+The custom UI grows with the window. The parameters are hidden from REAPER's
 plain slider list (otherwise that list pushes the UI out of the window), but they still
 appear by name in automation envelopes, the **Param** button menu, parameter modulation
-and MIDI learn.
+and MIDI learn — and to a screen reader such as OSARA through REAPER's FX parameter list,
+which the custom window cannot offer.
 
 ---
 
@@ -172,7 +173,8 @@ Pick one from the preset box at the top (◀ ▶ step through them).
 **MUTATE** randomises the engine, the mangle and movement sections, the
 modulation, or everything, within musical ranges. **Nudge** makes small
 random changes to the current sound. Mutating from a preset you like is a
-quick way to find variations. Your own sounds save with the project, and
+quick way to find variations. Changed your mind? REAPER's **Edit → Undo** puts back the sound
+you had before a preset or a mutation, tweaks included. Your own sounds save with the project, and
 REAPER's preset menu (the "+" button in the FX window) can store them as user presets.
 
 ---
@@ -192,10 +194,50 @@ The interface has three pages, chosen with the tabs under the title:
 
 * **Drag** a knob up or down. **Shift-drag** for fine adjustment.
 * **Double-click** or **Ctrl/Cmd-click** resets to the default.
-* **Scroll** (the mouse wheel) steps a knob or cycles a dropdown.
-* The footer shows the full name and value of whatever is under the mouse.
+* **Scroll** (the mouse wheel) steps a knob or cycles a dropdown. Over a gap between controls it
+  scrolls the window, when the window is smaller than the interface.
+* The line under the title shows the full name and value of whatever is under the mouse or
+  the keyboard focus, and the note, beat rate and oversampling on the right.
 * **Oversampling** (SYNTH page, bottom right): 1x is lightest on CPU, 2x (default) is the
   best balance, 4x is cleanest for heavy distortion and sync.
+
+### Using it from the keyboard
+
+* **Tab** and **Shift+Tab** move a white focus ring through every control, page tabs included,
+  in reading order.
+* **Return** or **Space** presses a button or a tab, opens a menu (the preset box too), or steps
+  a switch to its next choice.
+* The **arrow keys** turn a knob or a mod amount (hold **Shift** for finer steps), and step a
+  menu or a switch. **Delete** or **Backspace** puts a knob back to its default.
+* **Esc** lets go of the focus; clicking anywhere does too.
+
+REAPER may keep some keys for its own shortcuts while a plug-in window is in front (this has
+not yet been tried in REAPER). If a key does nothing here, click the **+** button at the top right of the FX window
+and turn on **Send all keyboard input to plug-in**. The plug-in never turns that on itself,
+so playing and REAPER's own shortcuts keep working as you expect.
+
+### Options: interface size and motion
+
+The **Options** button (top right) has:
+
+* **Interface Size 100%, 125%, 150%, 200%**: how large the window's contents are drawn. Make
+  the window larger and everything still grows with it. A larger size needs a wider window: in
+  a narrower one the contents are drawn as wide as the window (never below 100%) and scroll up
+  and down, never sideways. Below 100% the window scrolls both ways (scroll bars, the mouse
+  wheel, and the keyboard focus scrolls itself into view) instead of shrinking the text. On a
+  Retina screen 100% is already drawn sharp at twice the pixels.
+* **Fit Interface to Window**: the way it used to be — always shrinks to fit, however small.
+  Useful in a small docker. (The tiny view embedded in a track panel always fits.)
+* **Reduce Motion**: holds the pulsing beat bar still. The scopes keep showing the sound,
+  because that is information rather than decoration. A beat faster than three a second holds
+  the bar still anyway, so it never flashes.
+
+Both are saved with the project, like any parameter (as *Interface Size* and *Reduce Motion*,
+parameters 101 and 102). They are also stored in a REAPER preset you save, and the built-in
+presets and Mutate never change them.
+
+The text uses your system's own font — San Francisco on a Mac, Segoe UI on Windows — and falls
+back to Arial. Every line of text is at least 7:1 against what it sits on.
 
 ## Reese recipes (from the guides)
 
@@ -220,11 +262,16 @@ The plugin was developed with an offline harness in `tools/`:
 * `tools/test_render.py`: renders every engine at every oversampling rate, all mangle/FX blocks
   and all presets. It checks for NaN, silence and clipping, and **measures the beat rate** to
   verify the Cents / Hz / Tempo-Sync detune modes.
+* `tools/ui_checks.py`: reads the drawing log and checks the window against Apple's HIG
+  Foundations (`docs/apple-hig-review.md`): every string's contrast against what is drawn under
+  it, that it fits its box, its size. The suite also drives the window from the keyboard (Tab
+  order, focus ring, arrows, Return, Esc), and checks control sizes and spacing, interface size,
+  Retina, scrolling, the system font and Reduce Motion.
 * `tools/make_demo.py`: renders all presets on a DnB bassline to `build/demo/`.
 
 Project notes for contributors (and AI assistants): `CLAUDE.md`, `docs/JSFX_NOTES.md`
-(verified JSFX facts), `docs/DECISIONS.md` (architecture decision records) and
-`docs/SESSION_LOG.md`.
+(verified JSFX facts), `docs/DECISIONS.md` (architecture decision records),
+`docs/apple-hig-review.md` and `docs/SESSION_LOG.md`.
 
 ```
 pip install numpy          # (lameenc optional, for the MP3 demo)

@@ -1,7 +1,7 @@
 desc:Reese Basser — Reese Bass Synthesizer
 tags:instrument synthesizer bass reese
 //author: Reese Basser
-//version: 1.1.1
+//version: 1.3
 //
 // A monophonic synthesizer that only makes Reese basses, but makes them well.
 // Eight generation methods (engines), tempo-lockable beating, a Reese-focused
@@ -126,6 +126,10 @@ slider97:m5amt=0<-100,100,0.1>-Mod 5 Amount
 slider98:m6src=10<0,10,1{Off,LFO 1,LFO 2,Mod Env,Amp Env,Velocity,Mod Wheel,Aftertouch,Key Track,Note Random,Beat Phase}>-Mod 6 Source
 slider99:m6dst=0<0,24,1{Off,Cutoff,Resonance,Detune,Pitch,Engine A,Engine B,Engine C,Filter Drive,Dist Drive,Move Freq,Move Mix,Vowel,Freq Shift,Ring Ratio,Crush,Unison Spread,Stereo Spread,Width,Volume,Pan,Sub Level,Noise Level,LFO1 Rate,LFO2 Rate}>-Mod 6 Destination
 slider100:m6amt=0<-100,100,0.1>-Mod 6 Amount
+// ---------------------------------------------------------------- VIEW (window preferences, not sound)
+// Saved with the project like any parameter. Not touched by the built-in presets or Mutate.
+slider101:iface_size=0<0,4,1{100%,125%,150%,200%,Fit to Window}>-Interface Size
+slider102:reduce_motion=0<0,1,1{Off,On}>-Reduce Motion
 
 @init
 ext_noinit = 1;
@@ -146,6 +150,7 @@ SCOPE = 80000; SCOPE_SIZE = 4096;
 THROB = 90000; THROB_SIZE = 256;
 PSTORE = 100000;   // preset store (UI)
 UIMEM = 120000;    // UI scratch
+FOCUSL = 130000;   // keyboard focus list, 8 slots per control (id, kind, x, y, w, h), 128 controls; @gfx only
 freembuf(200000);
 
 // ================================================================ tables
@@ -996,26 +1001,97 @@ function TX(str, x, y, w, h, flags) (
   gfx_drawstr(str, flags, ui_ox + (x + w)*ui_s, ui_oy + (y + h)*ui_s);
 );
 function font(n) ( gfx_setfont(n); );
+// The system's own typeface: San Francisco on macOS, Segoe UI on Windows, else Arial.
+// gfx_getfont names the face actually given back, so a missing font is caught, not guessed.
+// The Mac face is tried first: a system without it hands back a substitute either way.
+function pick_font() (
+  gfx_setfont(1, ".AppleSystemUIFont", 13); gfx_getfont(#ui_got);
+  (matchi("*Apple*", #ui_got) || matchi("*System*", #ui_got) || matchi("*SF*", #ui_got)) ?
+    strcpy(#ui_font, ".AppleSystemUIFont") : (
+    gfx_setfont(1, "Segoe UI", 13); gfx_getfont(#ui_got);
+    matchi("Segoe UI*", #ui_got) ? strcpy(#ui_font, "Segoe UI") : strcpy(#ui_font, "Arial");
+  );
+  ui_font_ok = 1;
+);
+// Sizes are logical pixels at scale 1 (Apple's macOS default is 13 pt, its minimum 10 pt).
 function setup_fonts(s) (
-  gfx_setfont(1, "Arial", max(8, 12*s));
-  gfx_setfont(2, "Arial", max(8, 11.5*s));
-  gfx_setfont(3, "Arial", max(8, 13*s), 98);
-  gfx_setfont(4, "Arial", max(10, 27*s), 98);
-  gfx_setfont(5, "Arial", max(8, 13*s));
-  gfx_setfont(6, "Arial", max(8, 11*s));
+  gfx_setfont(1, #ui_font, max(8, 12*s));
+  gfx_setfont(2, #ui_font, max(8, 11.5*s));
+  gfx_setfont(3, #ui_font, max(8, 13*s), 98);
+  gfx_setfont(4, #ui_font, max(10, 27*s), 98);
+  gfx_setfont(5, #ui_font, max(8, 13*s));
+  gfx_setfont(6, #ui_font, max(8, 11*s));
 );
 function inr(x, y, w, h) ( ui_mx >= x && ui_mx < x + w && ui_my >= y && ui_my < y + h; );
-function accent(r, g, b) ( acr = r; acg = g; acb = b; );
+
+// ---------------------------------------------------------------- text colours
+// Every line of text is at least 7:1 on what it sits on (Apple's target for small text in a
+// dark window); tools/test_render.py measures every string drawn. Disabled text is exempt.
+function c_text() ( col(0.92, 0.94, 0.97, 1); );   // body text
+function c_sec() ( col(0.69, 0.714, 0.753, 1); );  // secondary text #B0B6C0
+function c_dis() ( col(0.35, 0.37, 0.42, 1); );    // disabled labels only
+// Edges of controls and marks that carry meaning: #6D7581, 3.6:1 or more on every fill and
+// ground here (Apple's Accessibility page; WCAG's 3:1 for non-text). Hover lights them.
+function c_edge() ( col(0.427, 0.459, 0.506, 1); );
+function lin(c) ( c <= 0.04045 ? c/12.92 : ((c + 0.055)/1.055)^2.4; );
+function lum(r, g, b) ( 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b); );
+PANEL_L = lum(0.105, 0.115, 0.14);
+// accent() sets a section's colour and a text tint of it (atr/atg/atb): the accent lightened
+// toward white until it reads 7.2:1 on a panel. Blue, pink and purple need it; teal does not.
+function accent(r, g, b) local(t) (
+  acr = r; acg = g; acb = b;
+  t = 0;
+  while ((lum(r + (1 - r)*t, g + (1 - g)*t, b + (1 - b)*t) + 0.05)/(PANEL_L + 0.05) < 7.2 && t < 1) ( t += 0.05; );
+  atr = r + (1 - r)*t; atg = g + (1 - g)*t; atb = b + (1 - b)*t;
+);
 function panel(x, y, w, h, title) (
   col(0.105, 0.115, 0.14, 1); RF(x, y, w, h);
   col(acr, acg, acb, 0.9); RF(x, y, w, 2);
   col(0.2, 0.22, 0.26, 1); RO(x, y, w, h);
-  font(3); col(acr, acg, acb, 1); TX(title, x + 10, y + 8, w - 20, 16, 0);
+  font(3); col(atr, atg, atb, 1); TX(title, x + 10, y + 8, w - 20, 16, 0);
 );
 function small_caption(str, x, y, w) (
-  font(6); col(0.5, 0.53, 0.6, 1); TX(str, x, y, w, 12, 1);
+  font(6); c_sec(); TX(str, x, y, w, 12, 1);
   col(0.28, 0.3, 0.35, 1); LN(x + 4, y + 14, x + w - 4, y + 14);
 );
+
+// ---------------------------------------------------------------- keyboard focus
+// Every control registers as it is drawn, so Tab moves through them in reading order. The list
+// keeps each control's place (logical, page offset included) for scrolling it into view and
+// for the tests. ids: parameters use their slider number; buttons 200+, tabs 300+.
+function focusable(id, kind, x, y, w, h) local(p) (
+  ui_fn < 128 ? (
+    p = FOCUSL + ui_fn*8;
+    p[0] = id; p[1] = kind; p[2] = x; p[3] = y + ui_ty; p[4] = w; p[5] = h;
+    ui_fn += 1;
+  );
+  ui_focus == id;
+);
+// near-white, never the accent, so it cannot be read as "on"
+function focus_ring(x, y, w, h) local(k, n, x0, y0, x1, y1) (
+  col(0.949, 0.957, 0.969, 1);
+  x0 = floor(ui_ox + (x - 4)*ui_s); y0 = floor(ui_oy + (y - 4)*ui_s);
+  x1 = floor(ui_ox + (x + w + 4)*ui_s); y1 = floor(ui_oy + (y + h + 4)*ui_s);
+  n = max(2, floor(2*ui_s + 0.5)); k = 0;
+  loop(n, gfx_roundrect(x0 + k, y0 + k, x1 - x0 - 2*k, y1 - y0 - 2*k, 5*ui_s); k += 1; );
+);
+function key_is(a, b) ( ui_key == a || ui_key == b; );
+// arrows nudge a value (Shift for finer), Delete or Backspace puts it back to its default
+function key_value(i) (
+  ui_focus == i && ui_key != 0 ? (
+    key_is('up', 'rght') || key_is('down', 'left') ? (
+      PSTEP[i] ? p_set(i, slider(i) + (key_is('up', 'rght') ? 1 : -1)) :
+        p_set(i, val_of(i, norm_of(i, slider(i)) + (key_is('up', 'rght') ? 1 : -1)*((mouse_cap & 8) ? 0.001 : 0.01)));
+      automate(i, 1); ui_key = 0;
+    ) : key_is('del', 8) ? (
+      p_set(i, PDEF[i]); automate(i, 1); ui_key = 0;
+    );
+  );
+);
+function key_press(id) ( ui_focus == id && key_is(13, 32) ? ( ui_key = 0; 1; ) : 0; );
+
+// a preset (p, 1-based) or a mutation (m, 1-based) is made next frame, with an undo point either side
+function ask_change(p, m) ( sliderchange(-1); ui_want_preset = p; ui_want_mutate = m; );
 
 // ---------------------------------------------------------------- mouse bookkeeping
 function begin_widget(i, hit) (
@@ -1039,12 +1115,17 @@ function wheel_widget(i, hit) (
 );
 
 // ---------------------------------------------------------------- widgets
+// Buttons, menus, switches and bars are 28 tall with at least 12 between them; a knob is its
+// own shape (a 38 px dial in a 66 x 74 cell, hit area 56 x 72, 16 or more apart).
 // rotary knob, cell 66 x 74
-function knob(i, x, y, lbl) local(cx, cy, n, a0, a1, ac, hit, bip, px, py, r, sens) (
+function knob(i, x, y, lbl) local(cx, cy, n, a0, a1, ac, hit, bip, px, py, r, sens, foc) (
   cx = x + 33; cy = y + 22; r = 19;
   hit = inr(x + 5, y, 56, 72);
+  foc = focusable(i, 1, x + 5, y, 56, 72);
+  foc ? ui_hov = i;
   begin_widget(i, hit);
   wheel_widget(i, hit);
+  key_value(i);
   ui_drag == i ? (
     sens = (mouse_cap & 8) ? 0.0006 : 0.005;
     PSTEP[i] && PMAX[i] - PMIN[i] < 40 ? sens = 1/(PMAX[i] - PMIN[i] + 1)/14;
@@ -1069,69 +1150,98 @@ function knob(i, x, y, lbl) local(cx, cy, n, a0, a1, ac, hit, bip, px, py, r, se
   px = cx + sin(ac)*(r - 6); py = cy - cos(ac)*(r - 6);
   col(0.92, 0.94, 0.97, 1); LN(cx + sin(ac)*(r - 13), cy - cos(ac)*(r - 13), px, py);
   // labels
-  font(6); col(0.66, 0.69, 0.76, 1); TX(lbl, x - 4, y + 45, 74, 12, 1);
+  font(6); c_sec(); TX(lbl, x - 4, y + 45, 74, 12, 1);
   font(2);
-  hit || ui_drag == i ? col(1, 1, 1, 1) : col(acr*0.5 + 0.4, acg*0.5 + 0.4, acb*0.5 + 0.4, 1);
+  hit || ui_drag == i || foc ? col(1, 1, 1, 1) : col(atr*0.5 + 0.5, atg*0.5 + 0.5, atb*0.5 + 0.5, 1);
   TX(fmt_val(#kv, i), x - 6, y + 59, 78, 13, 1);
+  foc ? focus_ring(x + 5, y, 56, 72);
 );
-// dropdown box
-function dropdown(i, x, y, w, h) local(hit, old) (
+// dropdown box: Return or Space opens it, the arrows step through it
+function dropdown(i, x, y, w, h) local(hit, old, foc) (
   old = slider(i);
   hit = inr(x, y, w, h);
-  hit ? ui_hov = i;
+  foc = focusable(i, 2, x, y, w, h);
+  hit || foc ? ui_hov = i;
+  foc && ui_key != 0 ? (
+    key_is('down', 'rght') ? ( p_set(i, slider(i) + 1); automate(i, 1); ui_key = 0; ) :
+    key_is('up', 'left') ? ( p_set(i, slider(i) - 1); automate(i, 1); ui_key = 0; ) :
+    key_is(13, 32) ? ( ui_open = i; ui_key = 0; );
+  );
   col(0.07, 0.075, 0.09, 1); RF(x, y, w, h);
-  col(hit ? acr : 0.3, hit ? acg : 0.33, hit ? acb : 0.38, 1); RO(x, y, w, h);
-  font(5); col(0.9, 0.92, 0.95, 1);
+  hit ? col(acr, acg, acb, 1) : c_edge(); RO(x, y, w, h);
+  font(5); c_text();
   TX(list_item(#dd, PENUM[i], slider(i)), x + 6, y, w - 20, h, 4);
   col(acr, acg, acb, 1);
   gfx_triangle(ui_ox + (x + w - 13)*ui_s, ui_oy + (y + h*0.5 - 2)*ui_s, ui_ox + (x + w - 5)*ui_s, ui_oy + (y + h*0.5 - 2)*ui_s,
                ui_ox + (x + w - 9)*ui_s, ui_oy + (y + h*0.5 + 3)*ui_s);
   hit && mouse_wheel != 0 ? ( p_set(i, slider(i) + (mouse_wheel > 0 ? -1 : 1)); mouse_wheel = 0; );
-  hit && ui_click ? (
+  (hit && ui_click) || ui_open == i ? (
     gfx_x = ui_ox + x*ui_s; gfx_y = ui_oy + (y + h)*ui_s;
     ui_res = gfx_showmenu(build_menu(#menu, PENUM[i], slider(i)));
-    ui_res > 0 ? p_set(i, ui_res - 1);
-    ui_click = 0;
+    ui_res > 0 ? ( p_set(i, ui_res - 1); automate(i, 1); );
+    ui_click = 0; ui_open = 0;
   );
+  foc ? focus_ring(x, y, w, h);
   slider(i) != old;
 );
-// segmented switch for an enum parameter
-function segs(i, x, y, w, h) local(n, j, sw, hit, on) (
+// segmented switch for an enum parameter. The chosen segment is filled and carries a bar
+// along its foot, so it is not told apart by colour alone.
+function segs(i, x, y, w, h) local(n, j, sw, hit, on, foc, v) (
   n = PMAX[i] + 1; sw = w/n; j = 0;
+  foc = focusable(i, 3, x, y, w, h);
+  foc ? ui_hov = i;
+  foc && ui_key != 0 ? (
+    v = slider(i);
+    key_is('rght', 'down') ? ( p_set(i, min(v + 1, n - 1)); automate(i, 1); ui_key = 0; ) :
+    key_is('left', 'up') ? ( p_set(i, max(v - 1, 0)); automate(i, 1); ui_key = 0; ) :
+    key_is(13, 32) ? ( p_set(i, v + 1 >= n ? 0 : v + 1); automate(i, 1); ui_key = 0; );
+  );
   loop(n,
     hit = inr(x + j*sw, y, sw, h);
     hit ? ui_hov = i;
     on = slider(i) == j;
-    on ? col(acr*0.55, acg*0.55, acb*0.55, 1) : col(0.07, 0.075, 0.09, 1);
+    on ? col(acr*0.35, acg*0.35, acb*0.35, 1) : col(0.07, 0.075, 0.09, 1);
     RF(x + j*sw, y, sw, h);
-    col(0.25, 0.27, 0.32, 1); RO(x + j*sw, y, sw, h);
-    font(6); on ? col(1, 1, 1, 1) : col(0.6, 0.63, 0.7, 1);
+    on ? ( col(acr, acg, acb, 1); RF(x + j*sw + 1, y + h - 4, sw - 2, 3); );
+    c_edge(); RO(x + j*sw, y, sw, h);
+    font(6); on || hit ? col(1, 1, 1, 1) : c_sec();
     TX(list_item(#sg, PENUM[i], j), x + j*sw, y, sw, h, 5);
     hit && ui_click ? ( p_set(i, j); ui_click = 0; );
     j += 1;
   );
+  foc ? focus_ring(x, y, w, h);
 );
-// horizontal bipolar bar (mod amounts)
-function hbar(i, x, y, w, h) local(hit, n, cx) (
+// horizontal bipolar bar (mod amounts). The fill is dim so the value reads over it; a bright
+// edge marks where it ends.
+function hbar(i, x, y, w, h) local(hit, n, cx, ex, foc) (
   hit = inr(x, y, w, h);
+  foc = focusable(i, 4, x, y, w, h);
+  foc ? ui_hov = i;
   begin_widget(i, hit);
   wheel_widget(i, hit);
+  key_value(i);
   ui_drag == i ? p_set(i, val_of(i, ui_drag_n + (ui_mx - ui_drag_x)/w*((mouse_cap & 8) ? 0.1 : 1)));
   n = norm_of(i, slider(i));
   col(0.07, 0.075, 0.09, 1); RF(x, y, w, h);
-  cx = x + w*0.5;
-  col(acr, acg, acb, hit || ui_drag == i ? 1 : 0.75);
-  n >= 0.5 ? RF(cx, y + 2, (n - 0.5)*w, h - 4) : RF(x + n*w, y + 2, (0.5 - n)*w, h - 4);
-  col(0.35, 0.37, 0.42, 1); LN(cx, y, cx, y + h);
-  col(0.25, 0.27, 0.32, 1); RO(x, y, w, h);
-  font(6); col(0.9, 0.92, 0.95, 1); TX(fmt_val(#hb, i), x, y, w, h, 5);
+  cx = x + w*0.5; ex = x + n*w;
+  col(acr, acg, acb, 0.4);
+  n >= 0.5 ? RF(cx, y + 2, (n - 0.5)*w, h - 4) : RF(ex, y + 2, (0.5 - n)*w, h - 4);
+  abs(n - 0.5) > 0.004 ? ( col(acr, acg, acb, 1); RF(n >= 0.5 ? ex - 2 : ex, y + 2, 2, h - 4); );
+  c_edge(); LN(cx, y, cx, y + h);
+  hit || ui_drag == i ? col(acr, acg, acb, 1) : c_edge(); RO(x, y, w, h);
+  font(6); c_text(); TX(fmt_val(#hb, i), x, y, w, h, 5);
+  foc ? focus_ring(x, y, w, h);
 );
-function button(str, x, y, w, h) local(hit) (
+// a push button; returns 1 when clicked or pressed with Return or Space
+function button(id, str, hint, x, y, w, h) local(hit, foc) (
   hit = inr(x, y, w, h);
+  foc = focusable(id, 5, x, y, w, h);
+  hit || foc ? ui_hint = hint;
   col(hit ? 0.2 : 0.13, hit ? 0.22 : 0.145, hit ? 0.26 : 0.17, 1); RF(x, y, w, h);
-  col(acr, acg, acb, hit ? 1 : 0.6); RO(x, y, w, h);
-  font(3); col(0.92, 0.94, 0.97, 1); TX(str, x, y, w, h, 5);
-  hit && ui_click ? ( ui_click = 0; 1; ) : 0;
+  col(acr, acg, acb, hit ? 1 : 0.8); RO(x, y, w, h);
+  font(3); c_text(); TX(str, x, y, w, h, 5);
+  foc ? focus_ring(x, y, w, h);
+  (hit && ui_click) || key_press(id) ? ( ui_click = 0; 1; ) : 0;
 );
 
 // ---------------------------------------------------------------- displays
@@ -1163,7 +1273,7 @@ function draw_filter_curve(x, y, w, h) local(i, f, wv, re, im, a, b, mag, db, px
       i += 1;
     );
   ) : (
-    font(6); col(0.5, 0.53, 0.6, 1); TX("FILTER OFF", x, y, w, h, 5);
+    font(6); c_sec(); TX("FILTER OFF", x, y, w, h, 5);
   );
 );
 function draw_scope(x, y, w, h) local(n, start, i, j, idx, v, px, py, lpx, lpy, per) (
@@ -1768,90 +1878,144 @@ ui_f0 = f0; ui_beat = beat_eff; ui_fc = fc;
 
 @gfx 960 684
 // ---------------------------------------------------------------- frame setup
-// Paged UI on a 960 x 684 logical canvas, scaled to the window. Pages: 0 synth, 1 mod, 2 fx.
+// Paged UI on a 960 x 684 logical canvas. Pages: 0 synth, 1 mod, 2 fx.
 // NOTE: @gfx runs in its own thread - only use ui_* globals (or function locals) here, never
 // variables the audio code writes (the transpiler rejects shared writes).
+// The canvas grows with the window. Interface size sets the smallest it may be drawn (Retina
+// included), as long as the window is wide enough: a narrower window draws it as wide as the
+// window, never below 100%, so it scrolls up and down but not sideways (1.3). Only below 100%
+// does a window scroll both ways (ADR-015). "Fit to Window", and the tiny view embedded in a
+// track panel, shrink it to fit as before.
 UI_W = 960; UI_H = 684;
-ui_s = min(gfx_w/UI_W, gfx_h/UI_H);
+ui_key = gfx_getchar();   // one key per frame; also makes mouse_cap report Ctrl/Shift
+!ui_font_ok ? pick_font();
+ui_retina = max(1, gfx_ext_retina);
+ui_zoom = iface_size == 1 ? 1.25 : iface_size == 2 ? 1.5 : iface_size == 3 ? 2 : 1;
+ui_fit = min(gfx_w/UI_W, gfx_h/UI_H);
+ui_min = (iface_size == 4 || (gfx_ext_flags & 1)) ? 0 : max(ui_retina, min(ui_retina*ui_zoom, gfx_w/UI_W));
+ui_s = max(ui_fit, ui_min);
 ui_s <= 0 ? ui_s = 1;
-ui_ox = floor((gfx_w - UI_W*ui_s)*0.5); ui_oy = floor((gfx_h - UI_H*ui_s)*0.5);
 ui_s != ui_last_s ? ( setup_fonts(ui_s); ui_last_s = ui_s; );
-ui_mx = (mouse_x - ui_ox)/ui_s; ui_my = (mouse_y - ui_oy)/ui_s;
+ui_cw = UI_W*ui_s; ui_ch = UI_H*ui_s;
+ui_ovx = ui_cw > gfx_w + 0.5; ui_ovy = ui_ch > gfx_h + 0.5;
 ui_now = time_precise();
-gfx_getchar();   // makes mouse_cap report ctrl/shift even when the mouse isn't captured
 ui_click = (mouse_cap & 1) && !(ui_last_cap & 1);
 ui_release = !(mouse_cap & 1) && (ui_last_cap & 1);
 ui_release ? (
   ui_drag > 0 ? automate(ui_drag, 1);
   ui_drag = 0;
 );
-ui_hov = 0;
+// scroll bars, drawn over the edges only when the canvas is larger than the window
+ui_sbw = 10*ui_retina;
+ui_onsb = (ui_ovy && mouse_x >= gfx_w - ui_sbw && mouse_x < gfx_w && mouse_y >= 0 && mouse_y < gfx_h) ? 1 :
+          (ui_ovx && mouse_y >= gfx_h - ui_sbw && mouse_y < gfx_h && mouse_x >= 0 && mouse_x < gfx_w) ? 2 : 0;
+ui_click && ui_onsb && ui_drag == 0 ? (
+  ui_sbdrag = ui_onsb; ui_sbm = ui_onsb == 1 ? mouse_y : mouse_x; ui_sbs = ui_onsb == 1 ? ui_sy : ui_sx;
+  ui_click = 0;
+);
+!(mouse_cap & 1) ? ui_sbdrag = 0;
+ui_sbdrag == 1 ? ui_sy = ui_sbs + (mouse_y - ui_sbm)*ui_ch/gfx_h;
+ui_sbdrag == 2 ? ui_sx = ui_sbs + (mouse_x - ui_sbm)*ui_cw/gfx_w;
+ui_sx = ui_ovx ? clamp(ui_sx, 0, ui_cw - gfx_w) : 0;
+ui_sy = ui_ovy ? clamp(ui_sy, 0, ui_ch - gfx_h) : 0;
+ui_ox = ui_ovx ? -floor(ui_sx) : floor((gfx_w - ui_cw)*0.5);
+ui_oy = ui_ovy ? -floor(ui_sy) : floor((gfx_h - ui_ch)*0.5);
+ui_mx = (mouse_x - ui_ox)/ui_s; ui_my = (mouse_y - ui_oy)/ui_s;
+(ui_onsb || ui_sbdrag) ? ( ui_mx = -10000; ui_my = -10000; );
+ui_click ? ui_focus = 0;   // pointing takes over from the keyboard
+ui_hov = 0; ui_hint = 0; ui_fn = 0; ui_ty = 0;
+// A preset or a mutation replaces the sound. The frame that asks for it adds an undo point
+// (sliderchange(-1) from @gfx), this one makes the change and adds another, so REAPER's
+// Edit → Undo puts back the sound as it was, knob tweaks included (1.3).
+ui_want_preset || ui_want_mutate ? (
+  ui_want_preset ? ( load_preset(ui_want_preset - 1); preset_loaded_once = 1; ) : mutate(ui_want_mutate - 1);
+  sliderchange(-1); ui_want_preset = 0; ui_want_mutate = 0;
+);
 
 col(0.075, 0.08, 0.095, 1); gfx_rect(0, 0, gfx_w, gfx_h);
 
 // ---------------------------------------------------------------- header
+// Row 1: name, presets, Mutate, Options. Row 2: what is under the pointer or the keyboard
+// focus (else how to use the window), and the live readout. Nothing that matters sits at the
+// bottom edge, which a window dragged off the screen loses first.
 accent(0.24, 0.9, 0.76);
 font(4); col(0.95, 0.97, 1, 1); TX("REESE", 14, 6, 100, 30, 4);
-col(acr, acg, acb, 1); TX("BASSER", 118, 6, 130, 30, 4);
-font(6); col(0.5, 0.53, 0.6, 1); TX("Detuned bass synthesizer", 16, 35, 220, 11, 0);
+col(atr, atg, atb, 1); TX("BASSER", 118, 6, 130, 30, 4);
 // preset selector
-col(0.07, 0.075, 0.09, 1); RF(292, 8, 290, 32);
-col(0.25, 0.27, 0.32, 1); RO(292, 8, 290, 32);
-button("<", 262, 8, 28, 32) ? ( load_preset(cur_preset > 0 ? cur_preset - 1 : NUM_PRESETS - 1); preset_loaded_once = 1; );
-button(">", 584, 8, 28, 32) ? ( load_preset(cur_preset < NUM_PRESETS - 1 ? cur_preset + 1 : 0); preset_loaded_once = 1; );
-font(5); col(0.92, 0.94, 0.97, 1);
+button(201, "<", "Previous preset. Edit → Undo puts your sound back.", 262, 8, 28, 28) ? ask_change(1 + (cur_preset > 0 ? cur_preset - 1 : NUM_PRESETS - 1), 0);
+ui_pfoc = focusable(202, 7, 302, 8, 270, 28);
+ui_phit = inr(302, 8, 270, 28);
+(ui_phit || ui_pfoc) ? ui_hint = "Preset: click, or press Return, to choose one. Edit → Undo puts your sound back.";
+col(0.07, 0.075, 0.09, 1); RF(302, 8, 270, 28);
+ui_phit ? col(acr, acg, acb, 1) : c_edge(); RO(302, 8, 270, 28);
+font(5); c_text();
 list_item(#pn, PRESETS, cur_preset);
 preset_edited ? strcat(#pn, " *");
 !preset_loaded_once && !preset_edited ? strcpy(#pn, "Custom / Project Patch");
-TX(#pn, 292, 8, 290, 32, 5);
-inr(292, 8, 290, 32) && ui_click ? (
-  gfx_x = ui_ox + 292*ui_s; gfx_y = ui_oy + 40*ui_s;
+TX(#pn, 302, 8, 270, 28, 5);
+(ui_phit && ui_click) || key_press(202) ? (
+  gfx_x = ui_ox + 302*ui_s; gfx_y = ui_oy + 36*ui_s;
   ui_res = gfx_showmenu(build_menu(#menu, PRESETS, preset_loaded_once ? cur_preset : -1));
-  ui_res > 0 ? ( load_preset(ui_res - 1); preset_loaded_once = 1; );
+  ui_res > 0 ? ask_change(ui_res, 0);
   ui_click = 0;
 );
+ui_pfoc ? focus_ring(302, 8, 270, 28);
+button(203, ">", "Next preset. Edit → Undo puts your sound back.", 584, 8, 28, 28) ? ask_change(1 + (cur_preset < NUM_PRESETS - 1 ? cur_preset + 1 : 0), 0);
 accent(1.0, 0.35, 0.55);
-button("MUTATE", 628, 8, 110, 32) ? (
-  gfx_x = ui_ox + 628*ui_s; gfx_y = ui_oy + 40*ui_s;
+button(204, "MUTATE", "Mutate: randomise part of the sound for happy accidents. Edit → Undo puts it back.", 624, 8, 110, 28) ? (
+  gfx_x = ui_ox + 624*ui_s; gfx_y = ui_oy + 36*ui_s;
   ui_res = gfx_showmenu("Mutate Engine|Mutate Mangle and Movement|Mutate Modulation|Mutate Everything||Nudge All (Subtle)");
-  ui_res > 0 ? mutate(ui_res - 1);
+  ui_res > 0 ? ask_change(0, ui_res);
 );
-// live readout
-font(6); col(0.5, 0.53, 0.6, 1);
-sprintf(#ro, "Note %.1f Hz", ui_f0); TX(#ro, 750, 8, 198, 12, 2);
-sprintf(#ro, "Beat %.2f Hz", abs(ui_beat)); TX(#ro, 750, 21, 198, 12, 2);
-sprintf(#ro, "%s  ·  %dx oversampling", aenv_o.st > 0 ? "Voice on" : "Idle", quality == 0 ? 1 : quality == 1 ? 2 : 4);
-TX(#ro, 750, 34, 198, 12, 2);
+accent(0.8, 0.82, 0.86);
+button(205, "Options", "Options: interface size and reduced motion. A larger size needs a wider window.", 848, 8, 100, 28) ? (
+  gfx_x = ui_ox + 848*ui_s; gfx_y = ui_oy + 36*ui_s;
+  sprintf(#om, "%sInterface Size 100%%|%sInterface Size 125%%|%sInterface Size 150%%|%sInterface Size 200%%|%sFit Interface to Window||%sReduce Motion||#Reese Basser 1.3",
+          iface_size == 0 ? "!" : "", iface_size == 1 ? "!" : "", iface_size == 2 ? "!" : "",
+          iface_size == 3 ? "!" : "", iface_size == 4 ? "!" : "", reduce_motion ? "!" : "");
+  ui_res = gfx_showmenu(#om);
+  ui_res >= 1 && ui_res <= 5 ? ( iface_size = ui_res - 1; sliderchange(iface_size); );
+  ui_res == 6 ? ( reduce_motion = !reduce_motion; sliderchange(reduce_motion); );
+);
 
 // ---------------------------------------------------------------- page tabs
-function tab(str, x, w, page) local(hit, on) (
-  hit = inr(x, 52, w, 30); on = ui_page == page;
-  on ? col(acr*0.45, acg*0.45, acb*0.45, 1) : col(hit ? 0.15 : 0.11, hit ? 0.165 : 0.12, hit ? 0.2 : 0.145, 1);
-  RF(x, 52, w, 30);
-  col(acr, acg, acb, on ? 1 : 0.35); RF(x, 79, w, 3);
-  col(0.22, 0.24, 0.28, 1); RO(x, 52, w, 30);
-  font(3); on ? col(1, 1, 1, 1) : col(0.62, 0.65, 0.72, 1); TX(str, x, 52, w, 30, 5);
-  hit && ui_click ? ( ui_page = page; ui_click = 0; );
+// The chosen tab is filled and carries a thick bar; the others a thin one.
+function tab(str, x, w, page) local(hit, on, foc) (
+  hit = inr(x, 64, w, 28); on = ui_page == page;
+  foc = focusable(300 + page, 6, x, 64, w, 28);
+  hit || foc ? ui_hint = page == 0 ? "Synth page: engine, filter, sub and output." :
+                         page == 1 ? "Modulation page: envelopes, LFOs and the mod matrix." :
+                                     "FX + Mangle page: distortion, movement, mangle and stereo.";
+  on ? col(acr*0.35, acg*0.35, acb*0.35, 1) : col(hit ? 0.15 : 0.11, hit ? 0.165 : 0.12, hit ? 0.2 : 0.145, 1);
+  RF(x, 64, w, 28);
+  on ? ( col(acr, acg, acb, 1); RF(x, 88, w, 4); ) : ( col(acr, acg, acb, 0.6); RF(x, 91, w, 1); );
+  c_edge(); RO(x, 64, w, 28);
+  font(3); on || hit ? col(1, 1, 1, 1) : c_sec(); TX(str, x, 64, w, 28, 5);
+  foc ? focus_ring(x, 64, w, 28);
+  (hit && ui_click) || key_press(300 + page) ? ( ui_page = page; ui_click = 0; );
 );
 accent(0.24, 0.9, 0.76); tab("SYNTH", 10, 150, 0);
-accent(0.35, 0.65, 1.0); tab("MODULATION", 166, 150, 1);
-accent(1.0, 0.35, 0.55); tab("FX + MANGLE", 322, 150, 2);
+accent(0.35, 0.65, 1.0); tab("MODULATION", 172, 150, 1);
+accent(1.0, 0.35, 0.55); tab("FX + MANGLE", 334, 150, 2);
 // mini scope so the throb stays visible on every page
 ui_page != 0 ? (
   accent(0.24, 0.9, 0.76);
-  draw_scope(620, 52, 330, 30);
-  col(0.22, 0.24, 0.28, 1); RO(620, 52, 330, 30);
+  draw_scope(620, 64, 330, 28);
+  col(0.22, 0.24, 0.28, 1); RO(620, 64, 330, 28);
 );
+
+// pages are drawn 10 below their own coordinates, under the header's second row
+ui_oy0 = ui_oy; ui_oy += 10*ui_s; ui_my -= 10; ui_ty = 10;
 
 // ================================================================ PAGE: SYNTH
 ui_page == 0 ? (
   // -------------------------------------------------------------- engine
   accent(0.24, 0.9, 0.76);
   panel(10, 92, 600, 300, "OSCILLATOR ENGINE");
-  dropdown(1, 200, 97, 270, 24) ? engine_defaults();
+  dropdown(1, 200, 96, 270, 28) ? engine_defaults();
   // double-click defaults of A/B/C follow the current engine
   PDEF[6] = ENGDEF[eng*3]; PDEF[7] = ENGDEF[eng*3 + 1]; PDEF[8] = ENGDEF[eng*3 + 2];
-  font(6); col(0.55, 0.58, 0.65, 1); TX(ENGDESC[eng], 20, 126, 580, 12, 0);
+  font(6); c_sec(); TX(ENGDESC[eng], 20, 130, 580, 12, 0);
   detmode == 0 ? knob(2, 18, 148, "DETUNE") : detmode == 1 ? knob(4, 18, 148, "BEAT HZ") : knob(5, 18, 148, "BEAT SYNC");
   knob(6, 90, 148, ENGLBL[eng*3]);
   knob(7, 162, 148, ENGLBL[eng*3 + 1]);
@@ -1859,80 +2023,86 @@ ui_page == 0 ? (
   eng != 1 ? (
     knob(9, 306, 148, "UNISON"); knob(10, 378, 148, "UNI DET");
   ) : (
-    font(6); col(0.35, 0.37, 0.42, 1);
+    font(6); c_dis();
     TX("UNISON", 306, 194, 66, 12, 1); TX("UNI DET", 378, 194, 66, 12, 1);
-    TX("Supersaw has its", 306, 208, 138, 12, 1); TX("own voices.", 306, 220, 138, 12, 1);
+    c_sec(); TX("Supersaw has its", 306, 208, 138, 12, 1); TX("own voices.", 306, 220, 138, 12, 1);
   );
   knob(11, 450, 148, "STEREO");
   knob(12, 522, 148, "DRIFT");
   small_caption("DETUNE MODE", 20, 230, 180);
-  segs(3, 20, 246, 180, 24);
+  segs(3, 20, 246, 180, 28);
   small_caption("OSC PHASE", 212, 230, 180);
-  segs(13, 212, 246, 180, 24);
-  font(6); col(0.5, 0.53, 0.6, 1);
-  TX(detmode == 0 ? "Beat follows pitch" : detmode == 1 ? "Same beat on every note" : "Beat locked to the grid", 20, 274, 180, 12, 1);
-  TX(phasemode == 0 ? "Never reset" : phasemode == 1 ? "Same attack every note" : "Random start", 212, 274, 180, 12, 1);
-  knob(14, 450, 228, "LEVEL");
-  knob(79, 522, 228, "OCTAVE");
-  small_caption("BEAT (THE REESE THROB)", 20, 304, 580);
-  col(0.07, 0.075, 0.09, 1); RF(20, 322, 580, 28);
-  ui_bv = 0.5 + 0.5*cos(2*$pi*beat_ph);
-  col(acr, acg, acb, 0.25 + 0.6*ui_bv); RF(22, 324, 576*ui_bv, 24);
-  col(0.25, 0.27, 0.32, 1); RO(20, 322, 580, 28);
-  font(5); col(0.95, 0.97, 1, 1);
-  sprintf(#bt, "%.2f Hz   (one throb every %.2f s)", abs(ui_beat), 1/max(abs(ui_beat), 0.001));
-  TX(#bt, 20, 322, 580, 28, 5);
-  font(6); col(0.5, 0.53, 0.6, 1);
-  TX("Tip: Hz or Sync mode keeps the throb speed the same across a whole bassline.", 20, 358, 580, 12, 1);
+  segs(13, 212, 246, 180, 28);
+  font(6); c_sec();
+  TX(detmode == 0 ? "Beat follows pitch" : detmode == 1 ? "Same beat on every note" : "Beat locked to the grid", 20, 280, 180, 12, 1);
+  TX(phasemode == 0 ? "Never reset" : phasemode == 1 ? "Same attack every note" : "Random start", 212, 280, 180, 12, 1);
+  knob(14, 450, 232, "LEVEL");
+  knob(79, 522, 232, "OCTAVE");
+  small_caption("BEAT (THE REESE THROB)", 20, 308, 580);
+  col(0.07, 0.075, 0.09, 1); RF(20, 326, 580, 28);
+  // the bar pulses with the real beat. Reduce Motion holds it still, and so does a beat faster
+  // than 3 a second: more would be flashing (Apple's Accessibility page; WCAG's three flashes).
+  ui_still = reduce_motion || abs(ui_beat) > 3;
+  ui_bv = ui_still ? 1 : 0.5 + 0.5*cos(2*$pi*beat_ph);
+  col(acr, acg, acb, ui_still ? 0.5 : 0.25 + 0.6*ui_bv); RF(22, 328, 576*ui_bv, 24);
+  c_edge(); RO(20, 326, 580, 28);
+  font(5);
+  sprintf(#bt, "%.2f Hz (one throb every %.2f s)", abs(ui_beat), 1/max(abs(ui_beat), 0.001));
+  // the reading sits on its own dark plate, so it stays legible however bright the bar is
+  gfx_measurestr(#bt, ui_tw, ui_th); ui_tw = ui_tw/ui_s + 20;
+  col(0.07, 0.075, 0.09, 1); RF(310 - ui_tw*0.5, 330, ui_tw, 20);
+  c_text(); TX(#bt, 20, 326, 580, 28, 5);
+  font(6); c_sec();
+  TX("Tip: Hz or Sync mode keeps the throb speed the same across a whole bassline.", 20, 362, 580, 12, 1);
 
   // -------------------------------------------------------------- scope
   panel(620, 92, 330, 300, "SCOPE / THROB");
   draw_scope(630, 120, 310, 170);
-  font(6); col(0.5, 0.53, 0.6, 1); TX("Level over the last 3 s", 630, 296, 310, 12, 0);
+  font(6); c_sec(); TX("Level over the last 3 s", 630, 296, 310, 12, 0);
   draw_throb(630, 312, 310, 70);
 
   // -------------------------------------------------------------- filter
   accent(1.0, 0.72, 0.2);
   panel(10, 400, 410, 262, "FILTER");
-  dropdown(21, 110, 405, 300, 24);
-  knob(22, 18, 438, "CUTOFF"); knob(23, 98, 438, "RESO"); knob(24, 178, 438, "DRIVE");
-  knob(25, 258, 438, "KEY"); knob(26, 338, 438, "ENV");
-  draw_filter_curve(20, 520, 390, 132);
+  dropdown(21, 110, 404, 300, 28);
+  knob(22, 18, 444, "CUTOFF"); knob(23, 98, 444, "RESO"); knob(24, 178, 444, "DRIVE");
+  knob(25, 258, 444, "KEY"); knob(26, 338, 444, "ENV");
+  draw_filter_curve(20, 526, 390, 126);
 
   // -------------------------------------------------------------- sub + noise
   accent(0.55, 0.85, 0.35);
   panel(430, 400, 250, 262, "SUB + NOISE");
   knob(15, 438, 430, "SUB"); knob(18, 518, 430, "NOISE"); knob(19, 598, 430, "COLOR");
-  knob(20, 438, 512, "LOW CUT");
-  small_caption("SUB OCT", 518, 516, 150); segs(17, 518, 532, 150, 22);
-  small_caption("SUB WAVE", 440, 590, 230); segs(16, 440, 606, 230, 22);
-  font(6); col(0.5, 0.53, 0.6, 1); TX("Sub: mono, no FX  ·  Low cut: Reese only", 440, 636, 230, 12, 1);
+  knob(20, 438, 516, "LOW CUT");
+  small_caption("SUB OCT", 518, 516, 150); segs(17, 518, 532, 150, 28);
+  small_caption("SUB WAVE", 440, 594, 230); segs(16, 440, 610, 230, 28);
+  font(6); c_sec(); TX("Sub: mono, no FX  ·  Low cut: Reese only", 440, 644, 230, 12, 1);
 
   // -------------------------------------------------------------- play + output
   accent(0.8, 0.82, 0.86);
   panel(690, 400, 260, 262, "PLAY + OUTPUT");
   knob(75, 698, 430, "GLIDE"); knob(77, 778, 430, "BEND"); knob(81, 858, 430, "OUTPUT");
-  small_caption("NOTES", 700, 514, 115); segs(74, 700, 530, 115, 22);
-  small_caption("GLIDE", 825, 514, 115); segs(76, 825, 530, 115, 22);
-  small_caption("OVERSAMPLING", 700, 566, 115); segs(80, 700, 582, 115, 22);
-  small_caption("CLIPPER", 825, 566, 115); segs(82, 825, 582, 115, 22);
-  font(6); col(0.5, 0.53, 0.6, 1);
-  TX("Overlap notes to glide (legato).", 700, 616, 240, 12, 1);
-  TX("1x for light CPU, 4x for the cleanest drive", 700, 632, 240, 12, 1);
+  small_caption("NOTES", 700, 514, 114); segs(74, 700, 530, 114, 28);
+  small_caption("GLIDE", 826, 514, 114); segs(76, 826, 530, 114, 28);
+  small_caption("OVERSAMPLING", 700, 570, 114); segs(80, 700, 586, 114, 28);
+  small_caption("CLIPPER", 826, 570, 114); segs(82, 826, 586, 114, 28);
+  font(6); c_sec();
+  TX("Overlap notes to glide (legato).", 700, 622, 240, 12, 1);
+  TX("1x for light CPU, 4x for the cleanest drive", 700, 638, 240, 12, 1);
 );
 
 // ================================================================ PAGE: MODULATION
 function lfo_panel(x, y, w, h, base, title) (
   panel(x, y, w, h, title);
-  dropdown(base, x + 70, y + 5, w - 80, 24);
-  draw_lfo(x + 10, y + 36, w - 20, 54, slider(base));
+  dropdown(base, x + 70, y + 4, w - 80, 28);
+  draw_lfo(x + 10, y + 38, w - 20, 52, slider(base));
   slider(base + 1) ? knob(base + 3, x + 8, y + 100, "RATE") : knob(base + 2, x + 8, y + 100, "RATE");
   knob(base + 5, x + 80, y + 100, "FADE IN");
-  small_caption("SYNC", x + 160, y + 96, w - 170); segs(base + 1, x + 160, y + 112, w - 170, 22);
-  small_caption("TRIGGER", x + 160, y + 140, w - 170); segs(base + 4, x + 160, y + 156, w - 170, 22);
-  font(6); col(0.5, 0.53, 0.6, 1);
-  TX("Route it in the mod matrix.", x + 10, y + 196, w - 20, 12, 1);
-  TX("BPM and Free lock it to the song.", x + 10, y + 212, w - 20, 12, 1);
+  small_caption("SYNC", x + 160, y + 96, w - 170); segs(base + 1, x + 160, y + 112, w - 170, 28);
+  small_caption("TRIGGER", x + 160, y + 152, w - 170); segs(base + 4, x + 160, y + 168, w - 170, 28);
+  font(6); c_sec();
+  TX("Route it in the mod matrix.", x + 10, y + 206, w - 20, 12, 1);
+  TX("BPM and Free lock it to the song.", x + 10, y + 222, w - 20, 12, 1);
 );
 ui_page == 1 ? (
   accent(0.35, 0.65, 1.0);
@@ -1940,26 +2110,26 @@ ui_page == 1 ? (
   draw_env(20, 122, 285, 66, 27);
   knob(27, 18, 198, "ATTACK"); knob(28, 90, 198, "DECAY"); knob(29, 162, 198, "SUSTAIN"); knob(30, 234, 198, "RELEASE");
   small_caption("VELOCITY SENSITIVITY", 20, 290, 285);
-  hbar(78, 20, 308, 285, 22);
+  hbar(78, 20, 308, 285, 28);
   panel(325, 92, 305, 262, "MOD ENVELOPE");
   draw_env(335, 122, 285, 66, 31);
   knob(31, 333, 198, "ATTACK"); knob(32, 405, 198, "DECAY"); knob(33, 477, 198, "SUSTAIN"); knob(34, 549, 198, "RELEASE");
-  font(6); col(0.5, 0.53, 0.6, 1);
+  font(6); c_sec();
   TX("Drives the filter’s ENV knob and any", 335, 292, 285, 12, 1);
   TX("mod matrix slot using “Mod Env”.", 335, 308, 285, 12, 1);
   lfo_panel(640, 92, 310, 262, 35, "LFO 1");
   lfo_panel(10, 362, 305, 300, 41, "LFO 2");
 
   panel(325, 362, 625, 300, "MOD MATRIX");
-  font(6); col(0.5, 0.53, 0.6, 1);
+  font(6); c_sec();
   TX("Source  →  destination  ·  amount (drag; double-click for 0)", 470, 368, 470, 14, 2);
   ui_mi = 0;
   loop(6,
     ui_my_ = 400 + ui_mi*42;
-    font(3); col(0.45, 0.48, 0.55, 1); sprintf(#mn, "%d", ui_mi + 1); TX(#mn, 335, ui_my_, 14, 26, 4);
-    dropdown(83 + ui_mi*3, 352, ui_my_, 170, 26);
-    dropdown(84 + ui_mi*3, 530, ui_my_, 190, 26);
-    hbar(85 + ui_mi*3, 728, ui_my_, 212, 26);
+    font(3); c_sec(); sprintf(#mn, "%d", ui_mi + 1); TX(#mn, 335, ui_my_, 14, 28, 4);
+    dropdown(83 + ui_mi*3, 352, ui_my_, 166, 28);
+    dropdown(84 + ui_mi*3, 530, ui_my_, 186, 28);
+    hbar(85 + ui_mi*3, 728, ui_my_, 212, 28);
     ui_mi += 1;
   );
 );
@@ -1968,24 +2138,24 @@ ui_page == 1 ? (
 ui_page == 2 ? (
   accent(1.0, 0.35, 0.55);
   panel(10, 92, 300, 262, "DISTORTION");
-  dropdown(47, 130, 97, 170, 24);
-  knob(48, 18, 134, "DRIVE"); knob(49, 96, 134, "TONE"); knob(50, 174, 134, "MIX");
-  small_caption("POSITION", 20, 222, 280); segs(51, 20, 238, 280, 24);
-  font(6); col(0.5, 0.53, 0.6, 1);
-  TX("Post filter is classic, pre is gnarly.", 20, 270, 280, 12, 1);
-  TX("Oversampled; drive at 0 is off.", 20, 286, 280, 12, 1);
+  dropdown(47, 130, 96, 170, 28);
+  knob(48, 18, 136, "DRIVE"); knob(49, 96, 136, "TONE"); knob(50, 174, 136, "MIX");
+  small_caption("POSITION", 20, 222, 280); segs(51, 20, 238, 280, 28);
+  font(6); c_sec();
+  TX("Post filter is classic, pre is gnarly.", 20, 276, 280, 12, 1);
+  TX("Oversampled; drive at 0 is off.", 20, 292, 280, 12, 1);
 
   accent(0.7, 0.5, 1.0);
   panel(320, 92, 630, 262, "MOVEMENT");
-  dropdown(52, 440, 97, 220, 24);
-  knob(53, 330, 134, "FREQ"); knob(54, 420, 134, "DEPTH"); knob(55, 510, 134, "RATE");
-  knob(56, 600, 134, "RESO"); knob(57, 690, 134, "STEREO"); knob(58, 780, 134, "MIX");
-  font(5); col(0.62, 0.65, 0.72, 1);
+  dropdown(52, 440, 96, 220, 28);
+  knob(53, 330, 136, "FREQ"); knob(54, 420, 136, "DEPTH"); knob(55, 510, 136, "RATE");
+  knob(56, 600, 136, "RESO"); knob(57, 690, 136, "STEREO"); knob(58, 780, 136, "MIX");
+  font(5); c_sec();
   TX(mvtype == 0 ? "Off — choose a type above." :
      mvtype == 1 ? "Two notches an octave apart sweep the harmonics (neuro style)." :
      mvtype == 2 ? "6-stage phaser with feedback, swept in time with the song" :
-                   "Comb filter tuned by FREQ, swept by DEPTH, with RESO as feedback", 330, 230, 610, 16, 1);
-  font(6); col(0.5, 0.53, 0.6, 1); TX("RATE is a tempo division.", 330, 254, 610, 12, 1);
+                   "Comb filter tuned by FREQ, swept by DEPTH, with RESO as feedback", 330, 232, 610, 16, 1);
+  font(6); c_sec(); TX("RATE is a tempo division.", 330, 256, 610, 12, 1);
 
   accent(1.0, 0.35, 0.55);
   panel(10, 362, 700, 300, "MANGLE");
@@ -1997,34 +2167,88 @@ ui_page == 2 ? (
   knob(63, 296, 412, "RATIO"); knob(64, 364, 412, "MIX");
   knob(65, 434, 412, "BITS"); knob(66, 502, 412, "DOWN"); knob(67, 570, 412, "MIX");
   knob(68, 640, 412, "AMOUNT");
-  font(6); col(0.5, 0.53, 0.6, 1);
+  font(6); c_sec();
   TX("Talking A-E-I-O-U", 20, 494, 136, 12, 1);
   TX("Inharmonic, barber-pole", 158, 494, 136, 12, 1);
   TX("In tune with the note", 296, 494, 136, 12, 1);
   TX("Bits and sample rate", 434, 494, 204, 12, 1);
   TX("OTT-ish", 640, 494, 66, 12, 1);
   small_caption("SIGNAL FLOW", 20, 540, 680);
-  font(5); col(0.62, 0.65, 0.72, 1);
+  font(5); c_sec();
   TX("Voice  →  formant  →  ring  →  shift  →  crush  →  movement  →  squash  →  stereo  →  + sub", 20, 562, 680, 16, 1);
-  font(6); col(0.5, 0.53, 0.6, 1);
+  font(6); c_sec();
   TX("MUTATE (at the top) randomises these for happy accidents.", 20, 600, 680, 12, 1);
 
   accent(0.7, 0.5, 1.0);
   panel(720, 362, 230, 300, "STEREO");
   knob(69, 728, 392, "CHORUS"); knob(70, 800, 392, "RATE"); knob(71, 872, 392, "DEPTH");
   knob(72, 764, 480, "WIDTH"); knob(73, 836, 480, "MONO <");
-  font(6); col(0.5, 0.53, 0.6, 1);
+  font(6); c_sec();
   TX("Everything below MONO <", 730, 572, 210, 12, 1);
   TX("is summed to mono.", 730, 586, 210, 12, 1);
 );
+ui_oy = ui_oy0; ui_my += 10; ui_ty = 0;
 
-// ---------------------------------------------------------------- footer / help line
-font(6); col(0.45, 0.48, 0.55, 1);
+// ---------------------------------------------------------------- the hint line (header, row 2)
+font(6);
 ui_hov > 0 ? (
-  sprintf(#ft, "%s: %s", PNAME[ui_hov], fmt_val(#fv, ui_hov));
-  TX(#ft, 12, 668, 600, 12, 0);
-) : TX("Drag to adjust  ·  Shift-drag for fine control  ·  Double-click or Ctrl/Cmd-click to reset  ·  Scroll to step", 12, 668, 600, 12, 0);
-TX("Reese Basser 1.1.1", 750, 668, 198, 12, 2);
+  ui_hov >= 83 ? sprintf(#ft, "%s (slot %d): %s", PNAME[ui_hov], floor((ui_hov - 83)/3) + 1, fmt_val(#fv, ui_hov)) :
+                 sprintf(#ft, "%s: %s", PNAME[ui_hov], fmt_val(#fv, ui_hov));
+  c_text(); TX(#ft, 14, 44, 580, 12, 0);
+) : ui_hint ? (
+  c_text(); TX(ui_hint, 14, 44, 580, 12, 0);
+) : (
+  c_sec(); TX("Drag or scroll to adjust  ·  Shift for fine control  ·  Double-click to reset  ·  Tab to use the keys", 14, 44, 580, 12, 0);
+);
+c_sec();
+sprintf(#ro, "Note %.1f Hz  ·  Beat %.2f Hz  ·  %s  ·  %dx", ui_f0, abs(ui_beat), aenv_o.st > 0 ? "Voice on" : "Idle",
+        quality == 0 ? 1 : quality == 1 ? 2 : 4);
+TX(#ro, 600, 44, 348, 12, 2);
 
-mouse_wheel = 0;
+// ---------------------------------------------------------------- keys
+// Tab and Shift+Tab move the focus through every control in reading order; Return or Space
+// presses, the arrows nudge (Shift for finer), Delete resets, Esc lets go. The plugin never
+// asks for all keyboard input, so REAPER keeps its own shortcuts.
+ui_key == 9 ? (
+  ui_fn > 0 ? (
+    ui_cur = -1; ui_i = 0;
+    loop(ui_fn, FOCUSL[ui_i*8] == ui_focus ? ui_cur = ui_i; ui_i += 1; );
+    ui_cur = (mouse_cap & 8) ? (ui_cur <= 0 ? ui_fn - 1 : ui_cur - 1) : (ui_cur < 0 ? 0 : (ui_cur + 1) % ui_fn);
+    ui_focus = FOCUSL[ui_cur*8];
+    // keep it in view when the window is smaller than the interface
+    ui_p = FOCUSL + ui_cur*8;
+    ui_ovx ? (
+      (ui_p[2] - 12)*ui_s < ui_sx ? ui_sx = (ui_p[2] - 12)*ui_s;
+      (ui_p[2] + ui_p[4] + 12)*ui_s > ui_sx + gfx_w ? ui_sx = (ui_p[2] + ui_p[4] + 12)*ui_s - gfx_w;
+    );
+    ui_ovy ? (
+      (ui_p[3] - 12)*ui_s < ui_sy ? ui_sy = (ui_p[3] - 12)*ui_s;
+      (ui_p[3] + ui_p[5] + 12)*ui_s > ui_sy + gfx_h ? ui_sy = (ui_p[3] + ui_p[5] + 12)*ui_s - gfx_h;
+    );
+  );
+) : ui_key == 27 ? ui_focus = 0;
+
+// ---------------------------------------------------------------- scrolling
+// the wheel scrolls where no control took it
+ui_ovy && mouse_wheel != 0 ? ui_sy -= mouse_wheel/120*48*ui_s;
+ui_ovx && mouse_hwheel != 0 ? ui_sx += mouse_hwheel/120*48*ui_s;
+ui_ovy ? (
+  ui_tl = ui_ovx ? gfx_h - ui_sbw : gfx_h;
+  ui_th = max(20*ui_retina, ui_tl*gfx_h/ui_ch);
+  ui_tp = ui_sy/(ui_ch - gfx_h)*(ui_tl - ui_th);
+  col(0.1, 0.11, 0.13, 1); gfx_rect(gfx_w - ui_sbw, 0, ui_sbw, ui_tl);
+  ui_onsb == 1 || ui_sbdrag == 1 ? col(0.6, 0.63, 0.7, 1) : col(0.45, 0.48, 0.55, 1);
+  gfx_rect(gfx_w - ui_sbw + 2*ui_retina, ui_tp, ui_sbw - 4*ui_retina, ui_th);
+);
+ui_ovx ? (
+  ui_tl = ui_ovy ? gfx_w - ui_sbw : gfx_w;
+  ui_th = max(20*ui_retina, ui_tl*gfx_w/ui_cw);
+  ui_tp = ui_sx/(ui_cw - gfx_w)*(ui_tl - ui_th);
+  col(0.1, 0.11, 0.13, 1); gfx_rect(0, gfx_h - ui_sbw, ui_tl, ui_sbw);
+  ui_onsb == 2 || ui_sbdrag == 2 ? col(0.6, 0.63, 0.7, 1) : col(0.45, 0.48, 0.55, 1);
+  gfx_rect(ui_tp, gfx_h - ui_sbw + 2*ui_retina, ui_th, ui_sbw - 4*ui_retina);
+);
+
+FOCUSL[ui_fn*8] = 0;   // ends the list (read by the tests)
+mouse_wheel = 0; mouse_hwheel = 0;
 ui_last_cap = mouse_cap;

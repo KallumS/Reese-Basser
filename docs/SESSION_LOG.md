@@ -145,3 +145,124 @@ nothing about the sound, the layout or the sliders' numbers, order and ranges ch
 
 Verified: `tools/test_render.py` FAILURES: 0; all three pages rendered and looked at, nothing
 clipped; the preset box shows "Saunderson ’88 (CZ)"; the menus read as above.
+
+
+## Session 4 (2026-10-15): the rest of Apple's HIG Foundations (v1.2)
+
+The user asked for the window to meet Apple's HIG "Foundations" in full, as Transient Shuffler
+does (ADR-015, `docs/apple-hig-review.md`). Nothing about the sound changed; no slider was
+renumbered (two new ones, 101 and 102, are window preferences).
+
+**First, measure.** A checker (`tools/ui_checks.py`) was written to replay the harness's drawing
+log and measure every string against what is drawn under it. Run on 1.1.1 it found 34 strings
+under 7:1 on the Synth page alone: every caption and hint at 4.7:1, the footer 4.3:1, white on the
+chosen switches 4.8–5.3:1, and the beat reading over the bright beat bar down to 2.1:1 (it
+depends on the moment: the bar pulses, so the tests look at four moments). On the other pages
+the blue, pink and purple titles were 5.7–6.6:1, the mod-amount reading 3.4:1, the mod matrix's
+slot numbers 3.9:1.
+
+**What changed, in a musician's terms:**
+- Every word in the window is now easy to read: the grey captions are lighter, the coloured
+  section titles are a lighter tint of their colour, the chosen switch segments are darker, and
+  the beat reading sits on its own dark plate.
+- **Options** (top right): Interface Size 100/125/150/200% or Fit to Window, and Reduce Motion,
+  which holds the beat bar still. The window still grows when you make it bigger; made smaller
+  than the chosen size it scrolls instead of shrinking the text.
+- The whole window works from the keyboard: Tab, Shift+Tab, Return/Space, the arrows (Shift for
+  finer), Delete to reset, Esc. A white ring shows where you are, and the line under the title
+  says what it is and its value.
+- The help line and readout moved from the bottom edge to under the title; the version is in
+  the Options menu. Buttons, menus and switches are 28 tall with room between them; a chosen
+  switch or tab also has a bar under it.
+- The text is in the system's font (San Francisco, Segoe UI), else Arial.
+
+**The harness** gained what the new code needs, each written from the JSFX reference's
+description as carried in Transient Shuffler: multi-character key constants (`'rght'`),
+`gfx_getfont` (with `JSFX_FONTS` standing for the faces a system has), `match`/`matchi`
+(wildcards), `gfx_ext_flags`, and script commands `key`, `retina`, `extflags`, `dumpmem`,
+`logframe <path>`. `render_gfx.py` became a reusable `replay()` (its PNGs are byte-identical).
+
+**Tests** (`tools/test_render.py`, "HIG" sections): contrast and fit of 3,705 strings in 38 frames
+(all pages, four beat moments, hovered and focused states, every engine, movement, detune and
+phase mode); nothing under 10 px; nothing below y 664; the Tab order on each page (40, 45 and 35
+controls, counted off the screen), one ring per press, wrapping; ring colour; heights ≥ 28;
+spacing ≥ 12; the bar on every chosen switch and tab; Shift+Tab, Return, Space, arrows, Delete,
+Esc, a click; interface size from the menu, 200% with scroll bars and the focus scrolled into
+view, Retina (sharp, and in a smaller window), a small window, Fit to Window, the embedded view,
+the wheel; the font with each face present or missing; Reduce Motion on and off, and remembered.
+
+**Proving they bite.** 27 sabotages, each applied to a copy of the plug-in, never the working
+tree (the batch script is in the session scratchpad), running only the HIG checks. 25 bit at
+once. Two did not:
+- *Grey text on a hovered tab*: it measures 7.05:1, so it was not a violation — an estimate of
+  6.5 by hand was wrong. Paired with a lighter hover fill (5.8:1) it bites.
+- *Retina ignored*: a real gap. The only Retina case was a window exactly twice the canvas, where
+  fitting gives the same answer. A Retina window smaller than that must now still draw at 2x
+  and scroll; with that case added it bites.
+
+**Looked at**: all three pages at 100%, a focus ring on a switch, 200% scrolled to a focused
+knob, and a Retina-sized render. The README screenshots were re-rendered.
+
+**Not verified, only REAPER can say** (ADR-015): which keys REAPER passes to the window without
+"Send all keyboard input to plug-in"; whether `gfx_getfont` names the real face on macOS; the
+sideways wheel; how 125% and 150% look with REAPER's own font rasteriser; whether Esc is the
+window's or REAPER's. Note that 1.1 already called `gfx_getchar()` every frame, so key handling
+by REAPER is no different from what the user has already run.
+
+## Current status (end of session 4)
+
+- **v1.2 on `ccr-f2d9adc9-lanc9o`** (with 1.1.1), not yet run in REAPER. `tools/test_render.py`
+  passes (FAILURES: 0).
+- Ask the user, when they try it: does Tab move the white ring, do the arrows turn a knob, does
+  the text look like their system's font, and does Options → Interface Size behave as described.
+
+## Session 5 (2026-10-21): the final sweep of Apple's HIG Foundations (v1.3)
+
+Every guideline left on the Foundations pages was taken back to its page and decided for this
+window; the verdicts are in `docs/apple-hig-review.md` (*Final sweep*), the reasons in ADR-015's
+dated note. Done after AutoCC's sweep (its commit `9773580`), doing the equivalent here.
+
+**Measured first** (WCAG ratios at 100%): the edges of menus, switches, mod-amount bars and the
+preset box were 1.7–2.4:1 on what is around them, the tabs' 1.6:1 (their fill is 1.1:1 off the
+ground, so the edge is all that shows a tab); MUTATE's pink edge 2.7:1 on its own fill. The
+knob arcs (4.4:1 or more on the panel, 3.1:1 or more on the track) and the scroll bar (4.0:1)
+already passed. The beat bar pulsed at the beat's own rate, which Beat Hz lets reach 20 a second.
+
+**Changed**
+- `c_edge()` `#6D7581` for every framed control's edge and the mod bar's zero mark; buttons'
+  coloured edges at 80%.
+- A beat faster than 3 Hz holds the beat bar still; the still bar at half strength (3.7:1).
+- The interface size fits the window's width, never below 100%: no sideways scrolling unless
+  the window is narrower than 960 points. The Options hint says a larger size needs a wider
+  window.
+- A preset (menu, < or >) or a mutation goes through `ask_change()`: an undo point on the click,
+  the change and a second undo point the next frame. The hints say Edit → Undo puts the sound
+  back.
+- The harness logs `sliderchange(-1)` as `[undo point]`; `test_render.py --hig` runs only the
+  window's checks (2½ minutes).
+
+**Checked by** ten new checks (`ui_checks.edges()` and `arcs()`, the help line for all 120 Tab
+stops, every choice of seven menus, the flash and the still bar, four window widths at 200%, the
+undo points for a preset and a mutation). Twelve sabotages, each in a scratch copy of the repo
+(batch in the session scratchpad), running the window's checks. Eleven bit at once. One did not:
+- *MUTATE's edge back at 60%*: my estimate of 2.9:1 had blended it over the window's ground,
+  but it is drawn over the button's own fill, which lifts it to 3.2:1 outside — it passed. It is
+  2.7:1 against the fill inside, so `edges()` now also measures a button's edge against its own
+  fill (not the switches': a chosen segment's tint is itself the cue, with its bar), and then it
+  bites.
+
+**Looked at**: all three pages at 100% and 200% in a 1200-point window scrolled to a focused
+control. The three README screenshots were re-rendered (the edges now show).
+
+**Not verified, only REAPER can say**: that `sliderchange(-1)` from `@gfx` adds an undo point,
+and what two of them a frame apart look like in REAPER's undo history; how the width-fitted
+interface looks when the FX window is resized; everything still open from session 4 (keys,
+the system font, 125%/150%).
+
+## Current status (end of session 5)
+
+- **v1.3 on `ccr-f2d9adc9-lanc9o`** (with 1.1.1 and 1.2), not yet run in REAPER.
+  `tools/test_render.py` passes (FAILURES: 0).
+- Ask the user, when they try it: after choosing a preset or a mutation, does Edit → Undo bring
+  the old sound back in one step (or two)? At 200%, does the window fill its width without
+  scrolling sideways? Plus session 4's questions (Tab, arrows, the font, Interface Size).

@@ -1,5 +1,9 @@
 # Reese Basser
 
+> **This is the `plugin` branch: the VST3 and CLAP plugins.** The REAPER version
+> lives on `main` and does not include any of this. Changes to the REAPER version
+> are made on `main` and merged into `plugin`; `plugin` is never merged into `main`.
+
 A REAPER instrument that only makes **Reese basses**, with eight different ways
 of generating one, tempo-lockable beating, and a rack of tools for mangling the result.
 
@@ -32,6 +36,28 @@ and MIDI learn — and to a screen reader such as OSARA through REAPER's FX para
 which the custom window cannot offer.
 
 ---
+
+## Using it as a VST3 or CLAP plugin (Mac)
+
+Reese Basser also comes as a VST3 and a CLAP instrument for any DAW on a Mac
+(Apple Silicon and Intel). It is the same `ReeseBasser.jsfx` inside, run by the
+same engine REAPER uses, with the same window, so it sounds and looks the same.
+
+1. Download `Reese-Basser-macOS.zip` from the repository's **Releases** (or, for
+   the latest build, **Actions → Plugins → the newest run → Artifacts**) and
+   unzip it.
+2. Follow `INSTALL.txt` inside: copy the two plugins into
+   `~/Library/Audio/Plug-Ins/VST3` and `~/Library/Audio/Plug-Ins/CLAP`, then
+   paste one Terminal line that clears macOS's download flag (the plugins are
+   not signed with an Apple developer certificate).
+3. Rescan plugins in your DAW, put **Reese Basser** (by KallumS) on an
+   instrument track and play it.
+
+All 102 controls are parameters your DAW can automate, and the project
+remembers everything. Two things work differently from REAPER: a preset or
+Mutate is undone with your DAW's own undo for parameter changes (REAPER's undo
+points have no equivalent in a plugin), and the plugin's tempo comes from the
+DAW, so tempo-synced detune and LFOs follow your song.
 
 ## The idea
 
@@ -251,6 +277,13 @@ back to Arial. Every line of text is at least 7:1 against what it sits on.
 ---
 
 ## Development / tests
+
+The plugins are built by `plugin/build.sh` (on a Mac for the real thing; it also
+compiles on Linux as a check) and by `.github/workflows/plugin.yml` on every
+push, which also checks that a note makes sound and a saved project reloads
+exactly, and runs pluginval and clap-validator. Pushing a tag such as `v1.4`
+publishes the zip as a release.
+
 
 The plugin was developed with an offline harness in `tools/`:
 

@@ -1,5 +1,10 @@
 # CLAUDE.md: Reese Basser
 
+**Branches.** `main` is the REAPER version only. `plugin` (this branch) adds
+the VST3 and CLAP plugins on top of it. Work on the REAPER version goes on `main` and is merged
+into `plugin` (`git merge main`); `plugin` is never merged into `main`, so the
+REAPER version never carries the build files, workflows or plugin-only code.
+
 A REAPER instrument that only makes Reese basses. It is a single JSFX file
 (`ReeseBasser.jsfx`, EEL2 language). The owner's DAW is REAPER; the target is
 **REAPER 6.74+** (102 parameters, slider shaping, `tags:instrument`).
@@ -28,6 +33,8 @@ tools/jsfx2c/render_gfx.py  gfx log -> PNG (Liberation Sans = Arial metrics)
 tools/test_render.py      test suite (must print FAILURES: 0)
 tools/ui_checks.py        reads a gfx log: contrast and fit of every string, focus rings, focus list
 tools/make_demo.py        renders all presets on a DnB riff -> build/demo/*.wav|mp3
+plugin/                   the VST3/CLAP plugin: the .jsfx in a JUCE wrapper run by ysfx (ADR-016)
+.github/workflows/plugin.yml   builds, checks, validates and zips the plugins on a Mac runner
 ```
 
 ## Commands
@@ -143,3 +150,19 @@ defaults in ENGDEF), cutoff=22, quality=80 (oversampling), volume=81, mod matrix
   `ccr-f2d9adc9-lanc9o`. Commit messages are descriptive; no PR unless asked.
 - Never commit Apple's guideline pages: they are Apple's copyrighted text. Refer to them by page.
 - Don't commit Cockos documentation verbatim. Summarise verified facts in docs/JSFX_NOTES.md instead.
+
+## The plugin (ADR-016)
+
+- `plugin/` wraps `ReeseBasser.jsfx` unchanged, with ysfx (the EEL2 engine
+  REAPER uses) inside JUCE. The wrapper (`plugin/source/`, `plugin/wrapper.cmake`,
+  `plugin/test/`) is the same as Reverberator's and Instrument Creator's: a fix
+  goes to all three.
+- `plugin/build.sh` builds VST3 + CLAP into `plugin/out` (~10 min the first
+  time; it clones JUCE and ysfx with git, because the GitHub archive host is
+  blocked from the cloud container). `EXTRA_TARGETS=jsfx_state_check
+  plugin/build.sh && plugin/build/jsfx_state_check` checks a note makes sound
+  and a saved state reloads exactly.
+- Parameter IDs are `slider<n>`: one more reason never to renumber a slider.
+- CI's artifacts and logs cannot reach the container as files; the workflow
+  pushes its screenshot to a throwaway `ci-screenshots` branch, which can be
+  fetched with git.

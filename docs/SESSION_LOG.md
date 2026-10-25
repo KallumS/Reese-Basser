@@ -266,3 +266,15 @@ the system font, 125%/150%).
 - Ask the user, when they try it: after choosing a preset or a mutation, does Edit → Undo bring
   the old sound back in one step (or two)? At 200%, does the window fill its width without
   scrolling sideways? Plus session 4's questions (Tab, arrows, the font, Interface Size).
+
+## Session 6 (2026-10-25): VST3 and CLAP plugins, on the `plugin` branch
+
+- Asked for: a branch with a VST3/CLAP version, like Reverberator and Instrument Creator
+  (ADR-016). `main` stays the REAPER version; `plugin` carries the wrapper and the workflow.
+- The wrapper is those two repositories' (ysfx inside JUCE). Built on Linux first: the state
+  round-trip check passed first time. A new check in `plugin/test/state_check.cpp` plays a
+  note into the instrument and fails on silence: about −9 dB peak at the defaults; with the
+  note taken out it failed, so it can see silence.
+- Not yet seen in a DAW: playing it, the window inside a host, tempo-synced detune and LFOs
+  following a host's tempo, a Retina screen.
+

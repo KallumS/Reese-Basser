@@ -258,3 +258,23 @@ decided for this window (`docs/apple-hig-review.md`, *Final sweep*). Four change
 **Unverified in REAPER**: that `sliderchange(-1)` from `@gfx` adds the undo point (the JSFX
 reference says so; the harness only logs the call), and how two of them a frame apart appear
 in REAPER's undo history.
+
+## ADR-016: VST3 and CLAP by wrapping the JSFX, not rewriting it
+
+**Status:** accepted (session 6, 2026-10-25), on the `plugin` branch only. **Not yet run in a DAW.**
+**Context:** The user asked for a VST3 and CLAP version on a new branch, as already done for
+Reverberator and Instrument Creator. Everything known about the sound (the level-matched
+presets, the engines, the test suite) is known of the JSFX.
+**Decision:** `plugin/` is a small JUCE plugin that compiles `ReeseBasser.jsfx` in as data and
+runs it with ysfx (JoepVanlier/ysfx, pinned in `plugin/build.sh`, with the same two key fixes
+the family's hosts make, so Tab, the arrows and Shift behave as in REAPER). Its window is
+ysfx's `@gfx` view and nothing else. All 102 sliders are host parameters holding the slider's
+own value, snapped to its step, so automation and saved projects round-trip exactly. Mac only
+(Apple Silicon and Intel in one), built and checked by GitHub Actions.
+**Consequences:** the plugin sounds as the JSFX does, and a JSFX change reaches it at the next
+build (merge `main` into `plugin`). Undo points (`ask_change()`, ADR-015) have no plugin
+equivalent; a DAW's undo covers parameter changes its own way. JUCE 8 makes the binaries
+AGPL-3.0 as well as GPL-3.0. Not signed or notarised: the user clears the quarantine flag once.
+**Alternatives:** a C++ rewrite (every sound re-verified, two programs to keep in step); the
+JSFX→C transpiler in `tools/jsfx2c` (a test harness, not REAPER's engine, and it has no window).
+

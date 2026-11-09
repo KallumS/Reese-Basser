@@ -12,6 +12,14 @@ and Linux with nothing to compile. You can open it in REAPER's editor and change
 
 ## Install
 
+**With ReaPack** (easiest, and it keeps it up to date): Extensions ->
+ReaPack -> Import repositories, paste
+`https://raw.githubusercontent.com/KallumS/Reese-Basser/main/index.xml`,
+then Browse packages, find Reese Basser and Install. That link only works
+once this has been merged into the main branch.
+
+**By hand:**
+
 1. In REAPER: **Options → Show REAPER resource path in explorer/finder**.
 2. Copy `ReeseBasser.jsfx` into the `Effects` folder (a sub-folder such as
    `Effects/ReeseBasser/` also works).

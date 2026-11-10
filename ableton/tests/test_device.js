@@ -11,13 +11,13 @@ const { compare } = require('../kit/test/gen_compare.js');
 const ROOT = path.join(__dirname, '..', '..');
 const JSFX = path.join(ROOT, 'ReeseBasser.jsfx');
 suite({ bundle: path.join(__dirname, '..', 'ReeseBasser.js'), maxpat: path.join(__dirname, '..', 'ReeseBasser.maxpat'),
-        jsfx: JSFX, name: 'Reese Basser', window: [960, 684], memory: 65536, instrument: true });
+        jsfx: JSFX, name: 'Reese Basser', window: [960, 684], memory: 262144, instrument: true, vary: 1 });
 
 test('every engine sounds in gen~ as it does in the runtime', () => {
   const text = fs.readFileSync(JSFX, 'utf8');
   const notes = [[0, 0x90, 36, 110], [9000, 0x80, 36, 0], [10000, 0x90, 43, 90]];
   for (let e = 0; e <= 7; e++) {
-    const r = compare(text, { seconds: 0.4, midi: notes, sliders: { 1: e }, memory: 65536 });
+    const r = compare(text, { seconds: 0.4, midi: notes, sliders: { 1: e }, memory: 262144 });
     assert.ok(r.worst < 1e-6 && r.peak > 0.01, 'engine ' + e + ': worst ' + r.worst + ' at ' + r.at + ', peak ' + r.peak);
   }
 });

@@ -19,5 +19,5 @@
     "kit/live.js",
     "kit/jsfx_device.js"
   ],
-  "memory": 65536
+  "memory": 262144
 }

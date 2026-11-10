@@ -10,6 +10,8 @@ and Linux with nothing to compile. You can open it in REAPER's editor and change
 
 ---
 
+**In Ableton Live:** `ableton/` has Reese Basser as a Max for Live instrument. See [`ableton/README.md`](ableton/README.md).
+
 ## Install
 
 **With ReaPack** (easiest, and it keeps it up to date): Extensions ->

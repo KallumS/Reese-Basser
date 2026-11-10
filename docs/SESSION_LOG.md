@@ -266,3 +266,7 @@ the system font, 125%/150%).
 - Ask the user, when they try it: after choosing a preset or a mutation, does Edit → Undo bring
   the old sound back in one step (or two)? At 200%, does the window fill its width without
   scrolling sideways? Plus session 4's questions (Tab, arrows, the font, Interface Size).
+
+## 2026-11-10 - Ableton Live device
+
+The user is switching to Ableton and asked for each REAPER project as Max for Live, one branch per repository (branch `ableton`). The DSP is translated to gen~ by `ableton/kit/jsfx2gen.js`, the window is the JSFX's own on Middaw's runtime, and MIDI reaches gen~ through a buffer~. A bug found on the way: the translator gave sliders past 64 the same places as other variables (Reese has 102), so every control above slider 64 read the wrong value; slots now start after the highest slider. Six tests in Node, all eight engines matched sample for sample. Not done: opening it in Live.

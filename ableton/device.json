@@ -1,0 +1,23 @@
+{
+  "name": "Reese Basser",
+  "slug": "ReeseBasser",
+  "kind": "instrument",
+  "template": "jsfx_audio",
+  "width": 260,
+  "hello": "Show Window opens Reese Basser's own window.",
+  "device": {
+    "main": "ReeseBasser.jsfx",
+    "audio": true
+  },
+  "files": {
+    "ReeseBasser.jsfx": "../ReeseBasser.jsfx"
+  },
+  "buttons": [],
+  "scripts": [
+    "kit/runtime/jsfx.js",
+    "kit/gfx.js",
+    "kit/live.js",
+    "kit/jsfx_device.js"
+  ],
+  "memory": 65536
+}

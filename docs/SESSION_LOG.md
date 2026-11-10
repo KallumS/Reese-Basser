@@ -270,3 +270,5 @@ the system font, 125%/150%).
 ## 2026-11-10 - Ableton Live device
 
 The user is switching to Ableton and asked for each REAPER project as Max for Live, one branch per repository (branch `ableton`). The DSP is translated to gen~ by `ableton/kit/jsfx2gen.js`, the window is the JSFX's own on Middaw's runtime, and MIDI reaches gen~ through a buffer~. A bug found on the way: the translator gave sliders past 64 the same places as other variables (Reese has 102), so every control above slider 64 read the wrong value; slots now start after the highest slider. Six tests in Node, all eight engines matched sample for sample. Not done: opening it in Live.
+
+Later the same day the user asked for the docs to be brought up to date and a current picture in each repository. `ableton/window.png` is now drawn at Retina's 2x with text measured as Arial measures it, and `node ableton/window.js` redraws it from the repository (it was a scratch script), showing as it opens. The root README shows it under the Ableton paragraph, and CLAUDE.md has a section on the device: building, testing, the picture, the shared kit.
